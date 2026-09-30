@@ -35,10 +35,22 @@ if(INSTALLED_MINOR AND NOT INSTALLED_MINOR STREQUAL TARGET_MINOR)
 endif()
 
 add_library(mapnik_c SHARED
-  src/runtime.cpp src/diagnostics.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/feature.cpp src/memory.cpp src/expression.cpp src/geometry_out.cpp src/geometry_ops.cpp src/projection.cpp src/image.cpp src/imageops.cpp src/grid.cpp src/render.cpp)
+  src/runtime.cpp src/diagnostics.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/feature.cpp src/memory.cpp src/java_datasource.cpp src/expression.cpp src/geometry_out.cpp src/geometry_ops.cpp src/projection.cpp src/image.cpp src/imageops.cpp src/grid.cpp src/render.cpp)
 
 if(MAPNIK_FOUND_VIA STREQUAL "package")
   target_link_libraries(mapnik_c PRIVATE mapnik::mapnik)
+  # Some Mapnik headers include AGG's as <agg_basics.h>. mapnik-config adds this directory; the CMake
+  # package does not, so find it under the install prefix.
+  get_target_property(MAPNIK_INCLUDE_DIRS mapnik::mapnik INTERFACE_INCLUDE_DIRECTORIES)
+  find_path(MAPNIK_AGG_INCLUDE NAMES agg_basics.h
+            HINTS ${MAPNIK_INCLUDE_DIRS} ${mapnik_DIR}/../../../include ${mapnik_DIR}/../../include
+            PATH_SUFFIXES mapnik/agg include/mapnik/agg)
+  if(MAPNIK_AGG_INCLUDE)
+    message(STATUS "AGG headers: ${MAPNIK_AGG_INCLUDE}")
+    target_include_directories(mapnik_c PRIVATE ${MAPNIK_AGG_INCLUDE})
+  else()
+    message(WARNING "Could not find Mapnik's AGG headers (agg_basics.h); geometry operations may not compile.")
+  endif()
 else()
   function(mapnik_config out)
     execute_process(COMMAND ${MAPNIK_CONFIG} ${ARGN}

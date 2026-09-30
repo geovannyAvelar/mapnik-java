@@ -400,6 +400,29 @@ const char* mapnik_geometry_offset(const unsigned char* wkb, int length, double 
 /* In the transform's forward direction. Error if any point cannot be transformed. */
 const char* mapnik_geometry_reproject(const unsigned char* wkb, int length, mapnik_transform_t* transform);
 
+/* ---- datasource implemented in Java ---------------------------------------------------------- */
+
+/* One pair of handlers is registered for the whole process. Each Java datasource has an id that they get
+ * back. The features callback fills *out with a buffer it keeps alive until its next call on the same
+ * thread, and returns its length in *len (0 or more) and 0 on success. On failure it returns non-zero
+ * and *out is an error message in UTF-8 of *len bytes. Buffer layout, little endian:
+ *   u32 count, then per feature:
+ *     i64 id, u32 wkb_length, wkb bytes (2D), u32 attribute_count, then per attribute:
+ *       u32 name_length, name bytes, u8 type (0 null, 1 bool, 2 int, 3 double, 4 string),
+ *       then u8 / i64 / f64 / (u32 length, bytes) for bool, int, double, string. */
+typedef int  (*mapnik_java_features_fn)(long long id, double minx, double miny, double maxx, double maxy,
+                                        double resolution_x, double resolution_y, double scale_denominator,
+                                        unsigned char** out, int* len);
+/* Called when Mapnik destroys the datasource, so Java can forget the id. */
+typedef void (*mapnik_java_release_fn)(long long id);
+
+void mapnik_java_set_handlers(mapnik_java_features_fn features, mapnik_java_release_fn release);
+/* envelope is double[4]. fields are optional (may be NULL with count 0); types as for datasource fields. */
+mapnik_datasource_t* mapnik_java_datasource_create(long long id, const double* envelope,
+                                                   const char* const* field_names, const int* field_types,
+                                                   int field_count);
+void mapnik_java_datasource_set_envelope(mapnik_datasource_t* ds, double minx, double miny, double maxx, double maxy);
+
 /* ---- projections -------------------------------------------------------------------------- */
 
 /* params is anything Mapnik accepts: "epsg:3857", "+proj=utm +zone=33 ...". NULL on error. */

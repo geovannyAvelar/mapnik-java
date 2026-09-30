@@ -91,6 +91,9 @@ class NativeApiConsistencyTest {
         if (c.matches("mapnik_\\w+_t\\*")) {
             return j == Pointer.class;
         }
+        if (c.matches("mapnik_\\w+_fn")) {
+            return com.sun.jna.Callback.class.isAssignableFrom(j);
+        }
         if (c.matches("mapnik_\\w+_t\\*\\*")) {
             return j == PointerByReference.class;
         }

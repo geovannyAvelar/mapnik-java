@@ -246,6 +246,11 @@ interface NativeApi extends Library {
     String mapnik_geometry_offset(byte[] wkb, int length, double distance);
     String mapnik_geometry_reproject(byte[] wkb, int length, Pointer transform);
 
+    // datasource implemented in Java
+    void mapnik_java_set_handlers(JavaFeaturesHandler features, JavaReleaseHandler release);
+    Pointer mapnik_java_datasource_create(long id, double[] envelope, String[] fieldNames, int[] fieldTypes, int fieldCount);
+    void mapnik_java_datasource_set_envelope(Pointer datasource, double minx, double miny, double maxx, double maxy);
+
     // projections
     Pointer mapnik_projection_create(String params);
     void mapnik_projection_free(Pointer projection);

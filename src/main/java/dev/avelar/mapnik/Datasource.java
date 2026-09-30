@@ -31,6 +31,14 @@ public class Datasource implements AutoCloseable {
             this.type = type;
         }
 
+        /** A field to declare on a {@link JavaDatasource}. */
+        public static Field of(String name, FieldType type) {
+            if (name == null || name.isEmpty() || type == null) {
+                throw new IllegalArgumentException("a field needs a name and a type");
+            }
+            return new Field(name, type);
+        }
+
         public String name() { return name; }
         public FieldType type() { return type; }
 
