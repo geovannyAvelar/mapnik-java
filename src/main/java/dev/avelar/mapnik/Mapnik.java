@@ -18,6 +18,19 @@ public final class Mapnik {
         return NativeApi.INSTANCE.mapnik_version();
     }
 
+    /** Numeric Mapnik version: major * 100000 + minor * 100 + patch, for example 400100 for 4.1.0. */
+    public static int versionNumber() {
+        return NativeApi.INSTANCE.mapnik_version_number();
+    }
+
+    /** Names of the registered input plugins, for example {@code geojson} and {@code shape}. */
+    public static java.util.List<String> datasourcePlugins() {
+        String names = NativeApi.INSTANCE.mapnik_datasource_plugin_names();
+        return names == null || names.isEmpty()
+            ? java.util.Collections.<String>emptyList()
+            : java.util.Collections.unmodifiableList(java.util.Arrays.asList(names.split("\n")));
+    }
+
     /** Version of Mapnik this wrapper release was built and tested against. */
     public static String expectedVersion() {
         return EXPECTED;

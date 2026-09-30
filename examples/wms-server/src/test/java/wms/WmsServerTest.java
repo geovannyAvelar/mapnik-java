@@ -127,6 +127,17 @@ class WmsServerTest {
     }
 
     @Test
+    void bboxIsUsedExactlyEvenWhenItsAspectDiffersFromTheImage() throws IOException {
+        // A 2:1 bbox in a square image: the bbox is stretched, not widened.
+        // The western polygon's top edge (lat 30) is at row 133 when lat -90..90 spans 400 rows;
+        // if the server grew the bbox to fit, lat would span -180..180 and the edge would sit at row 167.
+        BufferedImage img = get(MAP_130.replace("HEIGHT=200", "HEIGHT=400") + WORLD_4326).image();
+        assertEquals(400, img.getHeight());
+        assertEquals(LAND, img.getRGB(161, 150));
+        assertEquals(OCEAN, img.getRGB(161, 120));
+    }
+
+    @Test
     void jpegFormat() throws IOException {
         Response r = get(MAP_130.replace("image/png", "image/jpeg") + "&CRS=EPSG:4326&BBOX=-90,-180,90,180");
         assertEquals(200, r.status);

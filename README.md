@@ -10,10 +10,12 @@ Mapnik has no C API, so Java cannot call it directly. This project puts a small 
 Java (MapnikMap)  ->  JNA (NativeApi)  ->  libmapnik_c.so (C shim)  ->  Mapnik (C++)
 ```
 
-- `native/` holds the C shim (`mapnik_c.h`, `mapnik_c.cpp`) and its CMake build. The shim catches every C++ exception and exposes the message through `mapnik_last_error()`, so no exception crosses the FFI boundary.
+- `native/` holds the C shim (`mapnik_c.h` and `src/*.cpp`, one file per area) and its CMake build. The shim catches every C++ exception and exposes the message through `mapnik_last_error()`, so no exception crosses the FFI boundary.
 - `src/main/java/dev/avelar/mapnik/` holds the Java side:
   - `Mapnik`: global setup (version, datasource plugins, fonts).
-  - `MapnikMap`: load a style, set the extent, render to a file or to bytes.
+  - `MapnikMap`: a map: load a style, projection, extent and zoom, layers, render to a file or to bytes.
+  - `Layer` and `Datasource`: layers and their data, from a style or built in code.
+  - `Box2d` and `AspectFixMode`: small value types.
   - `NativeApi`: the raw JNA mapping of `mapnik_c.h`.
   - `MapnikException`: thrown when a native call fails.
 
@@ -82,28 +84,65 @@ To use the library from your own application, put `libmapnik_c.so` on the JNA se
 java -Djna.library.path=build/native -cp ... YourApp
 ```
 
-### Projection and layers
+### Projection, extent and appearance
 
 ```java
 try (MapnikMap map = new MapnikMap(512, 512)) {
     map.load(Paths.get("style.xml"));
 
-    // Layers keep their own projection; Mapnik reprojects them to the map's.
-    map.setSrs("epsg:3857");
-    map.zoomToBox(-20037508, -20037508, 20037508, 20037508);   // extent is in the map's projection
+    map.setSrs("epsg:3857");                      // layers are reprojected to the map's projection
+    map.setBackground("#cfe8f7");
+    map.setAspectFixMode(AspectFixMode.RESPECT);  // use the box exactly, stretching pixels if needed
+    map.zoomToBox(new Box2d(-20037508, -20037508, 20037508, 20037508)); // in the map's projection
 
-    map.layerNames();                                  // ["land", "route"], in drawing order
-    map.setActiveLayers(Arrays.asList("land"));        // draw only these
-    map.setLayerActive("route", true);                 // or toggle one
-    map.activateAllLayers();
+    map.extent();            // what is shown now
+    map.scaleDenominator();
+    map.zoom(0.5);           // below 1 zooms in, above 1 zooms out
+    map.pan(10, 0);
 
+    String xml = map.toXml(); // the whole map as Mapnik XML
+}
+```
+
+Set the projection before `zoomToBox`, because the extent is interpreted in the map's projection. An invalid projection string fails when you render, not when you set it.
+
+### Layers
+
+```java
+map.layerNames();                                  // ["land", "route"], in drawing order
+map.setActiveLayers(Arrays.asList("land"));        // draw only these
+map.setLayerActive("route", true);                 // or toggle one
+map.layer("land").setMinimumScaleDenominator(1000).setOpacity(0.8);
+```
+
+`map.layer(...)` returns a live view onto a layer in the map. It stops working, with an `IllegalStateException`, when the map's layer list changes (add, remove, load) or the map is closed. Get a fresh view after changing the list.
+
+### Building a map in code
+
+```java
+Map<String, Object> params = new HashMap<>();
+params.put("type", "geojson");
+params.put("file", "/data/places.geojson");
+
+try (MapnikMap map = new MapnikMap(800, 400);
+     Layer layer = Layer.create("places", "epsg:4326");
+     Datasource ds = Datasource.create(params)) {
+
+    map.loadString("<Map><Style name=\"red\"><Rule><PolygonSymbolizer fill=\"red\"/></Rule></Style></Map>", null);
+    layer.setDatasource(ds).addStyle("red");   // the layer keeps its own reference to ds
+    map.addLayer(layer);                       // copies the layer, so you may close yours
+    map.zoomToBox(layer.envelope());
     byte[] png = map.renderToPng();
 }
 ```
 
-Set the projection before `zoomToBox`, because the extent is interpreted in the map's projection. An invalid projection string fails when you render, not when you set it. Unknown layer names throw `IllegalArgumentException`.
+Styles are still defined in XML. Creating styles, rules and symbolizers in code is planned (see [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system. A CMake-installed Mapnik has no `mapnik-config`: look under its install prefix (`find <prefix> -name csv.input`) and set `MAPNIK_INPUT_PLUGINS`.
+
+## Status
+
+The wrapper covers the core of Mapnik in phases: maps, layers and datasources work today. Features and queries, projections, more rendering options and styling in code are planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 
@@ -128,7 +167,7 @@ The `Integration` workflow builds the targeted Mapnik version from source (cache
 - `MapnikMap` is not thread-safe. Use one instance per thread, or a pool.
 - Map memory is native and not garbage collected. Always call `close()`, ideally with try-with-resources.
 - Call `registerDatasources` and `registerFonts` once at startup, before you load a style that needs them.
-- Only the subset of the Mapnik API needed to load a style and render it is wrapped so far. Adding more means adding a function to `mapnik_c.h`, then the matching lines in `NativeApi` and `MapnikMap`.
+- Only the important public parts of the Mapnik API are wrapped, in phases: see [docs/ROADMAP.md](docs/ROADMAP.md). Adding more means adding a function to `mapnik_c.h` and its `native/src` file, then the matching line in `NativeApi` and a method on the Java class.
 
 ## Layout
 

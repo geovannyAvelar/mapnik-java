@@ -44,7 +44,7 @@ gdal_translate -of PNG "WMS:http://localhost:8080/wms?SERVICE=WMS&VERSION=1.3.0&
 ## Limits
 
 - Other CRSs are rejected. Any PROJ-known CRS would work in the wrapper, but each one needs its own axis-order rule and capabilities entry here.
-- Mapnik widens the requested extent to match the `WIDTH:HEIGHT` ratio. Clients should send a `BBOX` with the same aspect ratio as the image.
+- The `BBOX` is used exactly (`AspectFixMode.RESPECT`). If its aspect ratio differs from `WIDTH:HEIGHT`, the image is stretched, as the WMS spec says.
 - `LAYERS` turns layers on or off. Drawing order is always the style's order, not the order in the request, so a request cannot put `land` above `route`.
 - No `GetFeatureInfo`, no `SLD`, no caching.
 - Each request renders with its own `MapnikMap`, because maps are not thread-safe. A real server would pool them.

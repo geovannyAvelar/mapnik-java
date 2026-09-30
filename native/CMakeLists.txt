@@ -34,7 +34,8 @@ if(INSTALLED_MINOR AND NOT INSTALLED_MINOR STREQUAL TARGET_MINOR)
   message(WARNING "Installed Mapnik ${INSTALLED_MAPNIK}, but this mapnik-java release targets ${TARGET_MAPNIK}. The build may fail or behave differently.")
 endif()
 
-add_library(mapnik_c SHARED mapnik_c.cpp)
+add_library(mapnik_c SHARED
+  src/runtime.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/render.cpp)
 
 if(MAPNIK_FOUND_VIA STREQUAL "package")
   target_link_libraries(mapnik_c PRIVATE mapnik::mapnik)

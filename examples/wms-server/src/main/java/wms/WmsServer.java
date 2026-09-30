@@ -2,6 +2,7 @@ package wms;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import dev.avelar.mapnik.AspectFixMode;
 import dev.avelar.mapnik.Mapnik;
 import dev.avelar.mapnik.MapnikMap;
 
@@ -164,6 +165,9 @@ public final class WmsServer implements AutoCloseable {
             // Layers stay in their own projection; Mapnik reprojects them to the map's.
             map.setSrs(crs.equals("EPSG:3857") ? "epsg:3857" : "epsg:4326");
             map.setActiveLayers(wanted);
+            // WMS says the BBOX is the extent of the image, even if its aspect ratio differs from
+            // WIDTH:HEIGHT (pixels are then stretched), so do not let Mapnik widen it.
+            map.setAspectFixMode(AspectFixMode.RESPECT);
             map.zoomToBox(b[0], b[1], b[2], b[3]);
             image = map.renderToBytes(mapnikFormat);
         }
