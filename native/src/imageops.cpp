@@ -7,6 +7,9 @@
 #include <mapnik/image_reader.hpp>
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/image_util.hpp>
+#include <mapnik/proj_transform.hpp>
+#include <mapnik/projection.hpp>
+#include <mapnik/warp.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -71,6 +74,33 @@ mapnik_image_t* mapnik_image_scale(mapnik_image_t* img, int w, int h, const char
         double ry = static_cast<double>(h) / static_cast<double>(s.height());
         mapnik::scale_image_agg(t, s, *m, rx, ry, 0.0, 0.0, 1.0);
         // The scaler leaves premultiplied pixels without saying so; demultiply_alpha trusts the flag.
+        t.set_premultiplied(true);
+        mapnik::demultiply_alpha(t);
+        t.set_premultiplied(false);
+        out = mc_image_wrap(std::move(t));
+    });
+    return out;
+}
+
+mapnik_image_t* mapnik_image_warp(mapnik_image_t* img, const char* src_srs, const double* src_ext,
+                                  const char* dst_srs, const double* dst_ext, int w, int h, int mesh,
+                                  const char* method) {
+    mapnik_image_t* out = nullptr;
+    guarded([&] {
+        if (w <= 0 || h <= 0) throw std::invalid_argument("image size must be positive");
+        if (mesh <= 0) throw std::invalid_argument("mesh size must be positive");
+        auto m = mapnik::scaling_method_from_string(method);
+        if (!m) throw std::invalid_argument(std::string("unknown scaling method: ") + method);
+        mapnik::projection source(src_srs);
+        mapnik::projection target(dst_srs);
+        mapnik::proj_transform tr(target, source);  // the warp asks for target coordinates -> source
+        mapnik::box2d<double> sext(src_ext[0], src_ext[1], src_ext[2], src_ext[3]);
+        mapnik::box2d<double> text(dst_ext[0], dst_ext[1], dst_ext[2], dst_ext[3]);
+        mapnik::image_rgba8 s = straight_copy(mc_image_of(img));
+        mapnik::premultiply_alpha(s);
+        mapnik::image_rgba8 t(w, h);
+        t.set(0);
+        mapnik::warp_image(t, s, tr, text, sext, 0.0, 0.0, static_cast<unsigned>(mesh), *m, 1.0, std::optional<double>());
         t.set_premultiplied(true);
         mapnik::demultiply_alpha(t);
         t.set_premultiplied(false);

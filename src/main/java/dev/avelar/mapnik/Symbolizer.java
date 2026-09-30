@@ -17,6 +17,7 @@ import java.util.Map;
 public final class Symbolizer {
     private final String element;
     private final Map<String, String> attributes = new LinkedHashMap<>();
+    private final java.util.List<String> children = new java.util.ArrayList<>();
     private String body;
 
     private Symbolizer(String element) {
@@ -149,6 +150,31 @@ public final class Symbolizer {
 
     public Symbolizer halo(Color color, double radius) { return halo(color.toStyleString(), radius); }
 
+    /**
+     * Add a nested XML element, for symbolizers that take them, such as the colorizer of a raster
+     * symbolizer or a text placement. Typed builders such as {@link RasterColorizer} use this; write raw
+     * XML only for elements that have no builder. A symbolizer made with {@link #text} keeps its
+     * expression as body text, so it cannot also have children.
+     */
+    public Symbolizer child(String xml) {
+        if (body != null) {
+            throw new IllegalStateException(element + " has text content, so it cannot also have nested elements");
+        }
+        if (xml == null || xml.isEmpty()) {
+            throw new IllegalArgumentException("child element is empty");
+        }
+        children.add(xml);
+        return this;
+    }
+
+    /** Colour a single-band raster by value. Only for {@link #raster()}. */
+    public Symbolizer colorizer(RasterColorizer colorizer) {
+        if (!"RasterSymbolizer".equals(element)) {
+            throw new IllegalStateException("only a raster symbolizer has a colorizer, not " + element);
+        }
+        return child(colorizer.toXml());
+    }
+
     // ---------------------------------------------------------------- output
 
     /** The element name, for example {@code PolygonSymbolizer}. */
@@ -163,7 +189,14 @@ public final class Symbolizer {
             sb.append(' ').append(e.getKey()).append("=\"").append(Xml.escape(e.getValue())).append('"');
         }
         if (body == null) {
-            return sb.append("/>").toString();
+            if (children.isEmpty()) {
+                return sb.append("/>").toString();
+            }
+            sb.append('>');
+            for (String c : children) {
+                sb.append(c);
+            }
+            return sb.append("</").append(element).append('>').toString();
         }
         return sb.append('>').append(Xml.escapeText(body)).append("</").append(element).append('>').toString();
     }

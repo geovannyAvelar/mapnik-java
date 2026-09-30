@@ -235,6 +235,8 @@ interface NativeApi extends Library {
     int mapnik_image_filter(Pointer image, String filters, double scaleFactor);
     int mapnik_image_composite(Pointer dst, Pointer src, String mode, double opacity, int dx, int dy);
     Pointer mapnik_image_scale(Pointer image, int width, int height, String method);
+    Pointer mapnik_image_warp(Pointer image, String sourceSrs, double[] sourceExtent, String targetSrs,
+                              double[] targetExtent, int width, int height, int meshSize, String method);
     Pointer mapnik_image_crop(Pointer image, int x, int y, int width, int height);
     Pointer mapnik_image_copy(Pointer image);
     int mapnik_image_apply_opacity(Pointer image, double opacity);

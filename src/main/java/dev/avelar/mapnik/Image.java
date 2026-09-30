@@ -112,6 +112,28 @@ public final class Image implements AutoCloseable {
         return check(N.mapnik_image_scale(ptr(), width, height, method.xmlName()));
     }
 
+    /**
+     * Reproject this image, which covers {@code sourceExtent} in {@code sourceSrs}, into a new image of
+     * {@code width} x {@code height} pixels that covers {@code targetExtent} in {@code targetSrs}. Areas
+     * of the new image that fall outside the source are transparent. Use a small target extent to
+     * zoom in, and {@link ScalingMethod#BILINEAR} unless you need hard pixels. Close the result.
+     */
+    public Image warp(String sourceSrs, Box2d sourceExtent, String targetSrs, Box2d targetExtent,
+                      int width, int height, ScalingMethod method) {
+        return warp(sourceSrs, sourceExtent, targetSrs, targetExtent, width, height, method, 16);
+    }
+
+    /** As above, with the size in pixels of the grid the warp is approximated on (Mapnik's default is 16). */
+    public Image warp(String sourceSrs, Box2d sourceExtent, String targetSrs, Box2d targetExtent,
+                      int width, int height, ScalingMethod method, int meshSize) {
+        return check(N.mapnik_image_warp(ptr(), sourceSrs, box(sourceExtent), targetSrs, box(targetExtent),
+            width, height, meshSize, method.xmlName()));
+    }
+
+    private static double[] box(Box2d b) {
+        return new double[] {b.minX(), b.minY(), b.maxX(), b.maxY()};
+    }
+
     /** A copy of part of this image. Throws {@link MapnikException} if the area is not inside the image. */
     public Image crop(int x, int y, int width, int height) {
         return check(N.mapnik_image_crop(ptr(), x, y, width, height));

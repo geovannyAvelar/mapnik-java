@@ -380,6 +380,13 @@ mapnik_image_t* mapnik_image_copy(mapnik_image_t* img);
 int  mapnik_image_apply_opacity(mapnik_image_t* img, double opacity);
 /* Make pixels of this colour transparent, blending partly matching ones, in place. */
 int  mapnik_image_color_to_alpha(mapnik_image_t* img, const char* color);
+/* Reproject a raster. source_extent is where the image sits in source_srs; the result covers
+ * target_extent in target_srs at width x height pixels. Extents are double[4]. mesh_size is the
+ * size in pixels of the grid the warp is approximated on (16 is Mapnik's default). NULL on error. */
+mapnik_image_t* mapnik_image_warp(mapnik_image_t* img, const char* source_srs, const double* source_extent,
+                                  const char* target_srs, const double* target_extent,
+                                  int width, int height, int mesh_size, const char* method);
+
 /* Size of an image file or of encoded data, without decoding the pixels. */
 int  mapnik_image_probe_file(const char* path, int* width, int* height);
 int  mapnik_image_probe_bytes(const unsigned char* data, int length, int* width, int* height);
