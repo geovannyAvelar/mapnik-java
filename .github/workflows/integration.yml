@@ -49,7 +49,7 @@ jobs:
       # Building Mapnik takes a while, so cache the installed tree per version.
       - name: Restore Mapnik
         id: mapnik-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/mapnik-install
           key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v1
@@ -64,16 +64,26 @@ jobs:
           cmake --build --preset linux-ci-release
           cmake --install build --prefix "$HOME/mapnik-install"
 
-      - name: Put Mapnik on PATH
-        run: |
-          echo "$HOME/mapnik-install/bin" >> "$GITHUB_PATH"
-          echo "LD_LIBRARY_PATH=$HOME/mapnik-install/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+      # Save right away, so a later failure does not throw the build away.
+      - name: Save Mapnik
+        if: steps.mapnik-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/mapnik-install
+          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v1
 
-      - name: Show Mapnik
+      # A CMake-installed Mapnik has no mapnik-config: point CMake at its package
+      # config and find the input plugins by looking for a known one.
+      - name: Point the build at Mapnik
         run: |
-          mapnik-config --version
-          mapnik-config --input-plugins
-          ls "$(mapnik-config --input-plugins)"
+          PREFIX="$HOME/mapnik-install"
+          PLUGIN="$(find "$PREFIX" -name 'csv.input' | head -1)"
+          test -n "$PLUGIN" || { echo "no input plugins under $PREFIX"; find "$PREFIX" -maxdepth 3 | head -50; exit 1; }
+          echo "CMAKE_PREFIX_PATH=$PREFIX" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$PREFIX/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          echo "MAPNIK_INPUT_PLUGINS=$(dirname "$PLUGIN")" >> "$GITHUB_ENV"
+          echo "plugins: $(dirname "$PLUGIN")"
+          ls "$(dirname "$PLUGIN")"
 
       - name: Build native shim
         run: |
