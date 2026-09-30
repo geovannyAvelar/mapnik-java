@@ -136,6 +136,28 @@ try (MapnikMap map = new MapnikMap(800, 400);
 }
 ```
 
+### Styling in code
+
+```java
+Style roads = Style.create("roads")
+    .add(Rule.create().filter("[kind] = 'motorway'")
+             .add(Symbolizer.line().stroke("#d1322b").strokeWidth(3)))
+    .add(Rule.create().elseFilter()
+             .add(Symbolizer.line().stroke("#888").strokeWidth(1).strokeDasharray("4,2")));
+
+Style labels = Style.create("labels").add(Rule.create().maxScaleDenominator(50000).add(
+    Symbolizer.text("[name]").faceName("DejaVu Sans Book").fontSize(12).fill("black").halo("white", 2)));
+
+map.addStyle(roads).addStyle(labels);
+layer.addStyle("roads").addStyle("labels");
+```
+
+Builders write Mapnik's own XML, so every symbolizer and attribute Mapnik supports is available: typed helpers cover the common ones and `attr("stroke-linejoin", "round")` sets any other. Symbolizers: `polygon`, `line`, `markers`, `point`, `polygonPattern`, `linePattern`, `raster`, `building`, `dot`, `debug`, `text` and `shield`.
+
+`addStyle` loads in Mapnik's strict mode. Mapnik's normal loader silently ignores a misspelled attribute, an attribute on the wrong kind of symbolizer, an unknown font or a missing image, and the style then draws nothing. Strict mode turns each of those into a `MapnikException` that names the problem, and the style is not kept. Pass `false` as a second argument for the lenient behaviour. A style name that already exists throws; use `replaceStyle`.
+
+`Rule.alsoFilter()` adds detail to features an earlier rule matched, and does nothing in `Style.FilterMode.FIRST` mode.
+
 ### Features and queries
 
 ```java
@@ -198,13 +220,12 @@ try (Image canvas = Image.create(map.width(), map.height())) {
 
 `RenderOptions.offset(x, y)` makes the image a window that starts at pixel (x, y) of a larger map image, which is how you render a big map in pieces. `Mapnik.hasCairo()` tells you whether PDF, SVG and PostScript output is available.
 
-Styles are still defined in XML. Creating styles, rules and symbolizers in code is planned (see [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system. A CMake-installed Mapnik has no `mapnik-config`: look under its install prefix (`find <prefix> -name csv.input`) and set `MAPNIK_INPUT_PLUGINS`.
 
 ## Status
 
-The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections and rendering work today. Styling in code is planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
+The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections, rendering and styling in code work today. See the roadmap for what is left out. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 
@@ -220,7 +241,9 @@ Both have their own README.
 ./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
 ```
 
-Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, projections, image formats and Cairo, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, projections, image formats and Cairo, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, styles built in code, and concurrent rendering with one map per thread.
+
+Text tests need fonts: they use `MAPNIK_FONTS`, or `mapnik-config --fonts`, and skip themselves if neither is available.
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 

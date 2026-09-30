@@ -45,8 +45,9 @@ const char* mapnik_datasource_plugin_names(void);
 mapnik_map_t* mapnik_map_create(int width, int height);
 void          mapnik_map_free(mapnik_map_t* m);
 
-int  mapnik_map_load(mapnik_map_t* m, const char* style_xml_path);
-int  mapnik_map_load_string(mapnik_map_t* m, const char* style_xml, const char* base_path);
+/* strict != 0 makes Mapnik's XML loader stricter: it reports problems it would otherwise skip. */
+int  mapnik_map_load(mapnik_map_t* m, const char* style_xml_path, int strict);
+int  mapnik_map_load_string(mapnik_map_t* m, const char* style_xml, const char* base_path, int strict);
 /* NULL on error. */
 const char* mapnik_map_save_to_string(mapnik_map_t* m, int explicit_defaults);
 int  mapnik_map_save(mapnik_map_t* m, const char* path, int explicit_defaults);

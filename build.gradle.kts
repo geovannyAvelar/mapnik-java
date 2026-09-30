@@ -60,6 +60,20 @@ val mapnikInputPlugins = providers.environmentVariable("MAPNIK_INPUT_PLUGINS").o
     }
 )
 
+// Fonts directory for text tests: MAPNIK_FONTS, else `mapnik-config --fonts`. Optional.
+val mapnikFonts = providers.environmentVariable("MAPNIK_FONTS").orElse(
+    providers.provider {
+        try {
+            providers.exec {
+                commandLine("mapnik-config", "--fonts")
+                isIgnoreExitValue = true
+            }.standardOutput.asText.get().trim()
+        } catch (e: Exception) {
+            ""
+        }
+    }
+)
+
 tasks.register<Test>("integrationTest") {
     description = "Runs integration tests against a real Mapnik install."
     group = "verification"
@@ -68,6 +82,7 @@ tasks.register<Test>("integrationTest") {
     useJUnitPlatform()
     systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
     systemProperty("mapnik.input.plugins", mapnikInputPlugins.get())
+    systemProperty("mapnik.fonts", mapnikFonts.get())
     testLogging {
         events("passed", "failed", "skipped")
         showStandardStreams = true

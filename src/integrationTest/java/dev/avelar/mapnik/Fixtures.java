@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 /** Registers the input plugins once and copies the test resources to a temp directory. */
@@ -14,6 +15,21 @@ final class Fixtures {
     private static Path dir;
 
     private Fixtures() {}
+
+    private static boolean fontsRegistered;
+
+    /** Registers the fonts directory once. Returns false if none is known, so callers can skip. */
+    static synchronized boolean fonts() {
+        String fonts = System.getProperty("mapnik.fonts");
+        if (fonts == null || fonts.isEmpty() || !Files.isDirectory(Paths.get(fonts))) {
+            return false;
+        }
+        if (!fontsRegistered) {
+            Mapnik.registerFonts(fonts);
+            fontsRegistered = true;
+        }
+        return true;
+    }
 
     static synchronized Path dir() throws IOException {
         if (dir == null) {

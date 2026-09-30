@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,15 +38,25 @@ public final class MapnikMap implements AutoCloseable {
 
     /** Load a Mapnik XML style from a file. Its layers are added to the map. */
     public MapnikMap load(Path styleXml) {
+        return load(styleXml, false);
+    }
+
+    /** As {@link #load(Path)}. With {@code strict}, Mapnik reports problems it would otherwise skip, such as unknown attributes. */
+    public MapnikMap load(Path styleXml, boolean strict) {
         layerVersion++;
-        Mapnik.check(N.mapnik_map_load(ptr(), styleXml.toString()));
+        Mapnik.check(N.mapnik_map_load(ptr(), styleXml.toString(), strict ? 1 : 0));
         return this;
     }
 
     /** Load a Mapnik XML style from a string. Relative paths in it resolve against {@code basePath}. */
     public MapnikMap loadString(String xml, Path basePath) {
+        return loadString(xml, basePath, false);
+    }
+
+    /** As {@link #loadString(String, Path)}, optionally strict as in {@link #load(Path, boolean)}. */
+    public MapnikMap loadString(String xml, Path basePath, boolean strict) {
         layerVersion++;
-        Mapnik.check(N.mapnik_map_load_string(ptr(), xml, basePath == null ? null : basePath.toString()));
+        Mapnik.check(N.mapnik_map_load_string(ptr(), xml, basePath == null ? null : basePath.toString(), strict ? 1 : 0));
         return this;
     }
 
@@ -330,6 +341,62 @@ public final class MapnikMap implements AutoCloseable {
         for (Layer l : layers()) {
             l.setActive(true);
         }
+        return this;
+    }
+
+    // ------------------------------------------------------------------ styles in code
+
+    /**
+     * Add a style built in code, checked by Mapnik's strict XML loader. Throws
+     * {@link IllegalArgumentException} if the map already has a style of that name (Mapnik would
+     * silently ignore the new one), and {@link MapnikException} if Mapnik rejects the style. Strict
+     * loading catches what plain loading skips: a misspelled attribute, an attribute that does not
+     * belong on that kind of symbolizer, an unknown font face or a missing image file. The message
+     * names the problem. A rejected style is not kept.
+     */
+    public MapnikMap addStyle(Style style) {
+        return addStyle(style, true);
+    }
+
+    /**
+     * As {@link #addStyle(Style)}. With {@code strict} false, Mapnik ignores attributes it does not
+     * know and keeps going if a font or file is missing, so the style loads but may not draw.
+     */
+    public MapnikMap addStyle(Style style, boolean strict) {
+        if (styleNames().contains(style.name())) {
+            throw new IllegalArgumentException("the map already has a style named '" + style.name()
+                + "'; use replaceStyle to change it");
+        }
+        try {
+            loadString("<Map>" + style.toXml() + "</Map>", null, strict);
+        } catch (MapnikException e) {
+            // Mapnik can reject the style after it has already inserted it.
+            if (styleNames().contains(style.name())) {
+                removeStyle(style.name());
+            }
+            throw e;
+        }
+        return this;
+    }
+
+    /** Add a style, replacing one of the same name if there is one. */
+    public MapnikMap replaceStyle(Style style) {
+        if (styleNames().contains(style.name())) {
+            removeStyle(style.name());
+        }
+        return addStyle(style);
+    }
+
+    public boolean hasStyle(String name) {
+        return styleNames().contains(name);
+    }
+
+    /**
+     * Add a font set for text symbolizers to use with {@code fontset-name}. The fonts must already
+     * be registered (see {@link Mapnik#registerFonts}), or Mapnik throws {@link MapnikException}.
+     */
+    public MapnikMap addFontSet(FontSet fontSet) {
+        loadString("<Map>" + fontSet.toXml() + "</Map>", null);
         return this;
     }
 

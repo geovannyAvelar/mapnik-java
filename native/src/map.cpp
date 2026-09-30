@@ -20,12 +20,12 @@ mapnik_map_t* mapnik_map_create(int w, int h) {
 
 void mapnik_map_free(mapnik_map_t* m) { delete m; }
 
-int mapnik_map_load(mapnik_map_t* m, const char* path) {
-    return guarded([&] { mapnik::load_map(m->map, path); });
+int mapnik_map_load(mapnik_map_t* m, const char* path, int strict) {
+    return guarded([&] { mapnik::load_map(m->map, path, strict != 0); });
 }
 
-int mapnik_map_load_string(mapnik_map_t* m, const char* xml, const char* base) {
-    return guarded([&] { mapnik::load_map_string(m->map, xml, false, base ? base : ""); });
+int mapnik_map_load_string(mapnik_map_t* m, const char* xml, const char* base, int strict) {
+    return guarded([&] { mapnik::load_map_string(m->map, xml, strict != 0, base ? base : ""); });
 }
 
 const char* mapnik_map_save_to_string(mapnik_map_t* m, int explicit_defaults) {

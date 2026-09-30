@@ -24,8 +24,8 @@ interface NativeApi extends Library {
     // map
     Pointer mapnik_map_create(int width, int height);
     void mapnik_map_free(Pointer map);
-    int mapnik_map_load(Pointer map, String path);
-    int mapnik_map_load_string(Pointer map, String xml, String basePath);
+    int mapnik_map_load(Pointer map, String path, int strict);
+    int mapnik_map_load_string(Pointer map, String xml, String basePath, int strict);
     String mapnik_map_save_to_string(Pointer map, int explicitDefaults);
     int mapnik_map_save(Pointer map, String path, int explicitDefaults);
     int mapnik_map_width(Pointer map);

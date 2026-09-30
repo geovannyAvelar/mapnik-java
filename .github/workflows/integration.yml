@@ -85,6 +85,14 @@ jobs:
           echo "MAPNIK_INPUT_PLUGINS=$(dirname "$PLUGIN")" >> "$GITHUB_ENV"
           echo "plugins: $(dirname "$PLUGIN")"
           ls "$(dirname "$PLUGIN")"
+          # Fonts are optional: the text tests skip themselves if there are none.
+          FONT="$(find "$PREFIX" -name 'DejaVuSans.ttf' | head -1)"
+          if [ -n "$FONT" ]; then
+            echo "MAPNIK_FONTS=$(dirname "$FONT")" >> "$GITHUB_ENV"
+            echo "fonts: $(dirname "$FONT")"
+          else
+            echo "no DejaVu fonts under $PREFIX; text tests will be skipped"
+          fi
 
       - name: Build native shim
         run: |

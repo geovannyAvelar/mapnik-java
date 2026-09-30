@@ -51,11 +51,22 @@ check real output, such as pixels and XML.
 - `Mapnik.hasCairo()`.
 - Not done: UTFGrid output, which needs a grid renderer and its own encoder. Ask if you need it.
 
-## Phase 5: styling in code
+## Phase 5: styling in code (done)
 
-- `Style` and `Rule`, filters and expressions given as strings.
-- Symbolizers: polygon, line, marker, point, text, raster, polygon and line pattern.
-- Fontsets, registered font face names.
+- `Style`, `Rule` and `Symbolizer` builders, plus `FontSet`. They write Mapnik's own XML and load it
+  through Mapnik's XML loader, so every symbolizer and attribute Mapnik supports is reachable.
+  Typed helpers exist for the common attributes, and `attr(name, value)` sets any other.
+- Symbolizers: polygon, line, markers, point, polygon pattern, line pattern, raster, building, dot,
+  debug, text and shield.
+- Rules: filter expressions, `elseFilter`, `alsoFilter`, scale ranges. Styles: opacity, compositing
+  mode, filter mode, image filters.
+- `MapnikMap.addStyle` loads in Mapnik's strict mode, which rejects misspelled attributes, attributes
+  on the wrong kind of symbolizer, unknown fonts and missing files, and rolls the style back. Mapnik's
+  plain loader would silently ignore all of those. `replaceStyle`, `hasStyle`, `addFontSet`.
+- Why XML and not the C++ symbolizer objects: Mapnik's symbolizer properties are a large templated
+  variant model with no string-based setter, and the XML loader is its supported way to set them.
+- Not done: raster colorizer stops, group symbolizers, and text placement options that need nested
+  XML elements. Use an XML style for those.
 
 ## Later
 
