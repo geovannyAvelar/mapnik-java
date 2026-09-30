@@ -50,6 +50,37 @@ const char* mapnik_color_to_string(int r, int g, int b, int a);
 /* "#rrggbb", or "#rrggbbaa" when not opaque. */
 const char* mapnik_color_to_hex(int r, int g, int b, int a);
 
+/* What this Mapnik was built with, as newline separated names: cairo, jpeg, png, tiff, webp, proj,
+ * grid, threadsafe. */
+const char* mapnik_capabilities(void);
+
+/* Logging. Severity: 0 debug, 1 warn, 2 error, 3 none. */
+int         mapnik_log_get_severity(void);
+void        mapnik_log_set_severity(int severity);
+/* Severity for one named part of Mapnik, which falls back to the global one. */
+int         mapnik_log_get_object_severity(const char* object);
+void        mapnik_log_set_object_severity(const char* object, int severity);
+void        mapnik_log_clear_object_severities(void);
+const char* mapnik_log_get_format(void);
+void        mapnik_log_set_format(const char* format);
+int         mapnik_log_use_file(const char* path);
+void        mapnik_log_use_console(void);
+
+/* Fonts registered process-wide. Face names are newline separated. */
+const char* mapnik_font_face_names(void);
+/* File holding a face, or NULL if the face is unknown. */
+const char* mapnik_font_face_file(const char* face);
+/* 0 on success, -1 if the file is not a font Mapnik can read. */
+int         mapnik_register_font_file(const char* path);
+
+/* Register one input plugin file. 0 on success, -1 on error. */
+int         mapnik_register_datasource_file(const char* path);
+const char* mapnik_datasource_plugin_directories(void);
+int         mapnik_datasource_plugin_registered(const char* name);
+
+/* Drop cached marker images and memory-mapped files. */
+void        mapnik_clear_caches(void);
+
 /* ---- map ---------------------------------------------------------------------------------- */
 
 mapnik_map_t* mapnik_map_create(int width, int height);

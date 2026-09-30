@@ -24,6 +24,23 @@ interface NativeApi extends Library {
     int mapnik_color_parse(String text, byte[] out);
     String mapnik_color_to_string(int r, int g, int b, int a);
     String mapnik_color_to_hex(int r, int g, int b, int a);
+    String mapnik_capabilities();
+    int mapnik_log_get_severity();
+    void mapnik_log_set_severity(int severity);
+    int mapnik_log_get_object_severity(String object);
+    void mapnik_log_set_object_severity(String object, int severity);
+    void mapnik_log_clear_object_severities();
+    String mapnik_log_get_format();
+    void mapnik_log_set_format(String format);
+    int mapnik_log_use_file(String path);
+    void mapnik_log_use_console();
+    String mapnik_font_face_names();
+    String mapnik_font_face_file(String face);
+    int mapnik_register_font_file(String path);
+    int mapnik_register_datasource_file(String path);
+    String mapnik_datasource_plugin_directories();
+    int mapnik_datasource_plugin_registered(String name);
+    void mapnik_clear_caches();
 
     // map
     Pointer mapnik_map_create(int width, int height);

@@ -44,6 +44,63 @@ public final class Mapnik {
         return NativeApi.INSTANCE.mapnik_cairo_available() == 1;
     }
 
+    /** What this Mapnik was built with. */
+    public static java.util.Set<Capability> capabilities() {
+        java.util.EnumSet<Capability> out = java.util.EnumSet.noneOf(Capability.class);
+        String names = NativeApi.INSTANCE.mapnik_capabilities();
+        if (names != null && !names.isEmpty()) {
+            for (String n : names.split("\n")) {
+                out.add(Capability.valueOf(n.toUpperCase(java.util.Locale.ROOT)));
+            }
+        }
+        return java.util.Collections.unmodifiableSet(out);
+    }
+
+    public static boolean supports(Capability capability) {
+        return capabilities().contains(capability);
+    }
+
+    /** Names of every font face registered in this process, sorted, for use as {@code face-name}. */
+    public static java.util.List<String> fontFaces() {
+        String names = NativeApi.INSTANCE.mapnik_font_face_names();
+        if (names == null || names.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        java.util.List<String> faces = new java.util.ArrayList<>(java.util.Arrays.asList(names.split("\n")));
+        java.util.Collections.sort(faces);
+        return java.util.Collections.unmodifiableList(faces);
+    }
+
+    /** The font file that provides a face, or empty if no registered face has that name. */
+    public static java.util.Optional<String> fontFile(String faceName) {
+        return java.util.Optional.ofNullable(NativeApi.INSTANCE.mapnik_font_face_file(faceName));
+    }
+
+    /** Register one font file. Throws {@link MapnikException} if Mapnik cannot read it as a font. */
+    public static void registerFontFile(java.nio.file.Path file) {
+        check(NativeApi.INSTANCE.mapnik_register_font_file(file.toString()));
+    }
+
+    /** Register one input plugin file. Throws {@link MapnikException} if it cannot be loaded. */
+    public static void registerDatasource(java.nio.file.Path pluginFile) {
+        check(NativeApi.INSTANCE.mapnik_register_datasource_file(pluginFile.toString()));
+    }
+
+    /** True if an input plugin with this name, such as {@code geojson}, is registered. */
+    public static boolean isDatasourceRegistered(String name) {
+        return NativeApi.INSTANCE.mapnik_datasource_plugin_registered(name) == 1;
+    }
+
+    /** The directories plugins were registered from, as Mapnik reports them. */
+    public static String datasourcePluginDirectories() {
+        return NativeApi.INSTANCE.mapnik_datasource_plugin_directories();
+    }
+
+    /** Drop cached marker images and memory-mapped files. Call it after changing files Mapnik has already read. */
+    public static void clearCaches() {
+        NativeApi.INSTANCE.mapnik_clear_caches();
+    }
+
     /** Version of Mapnik this wrapper release was built and tested against. */
     public static String expectedVersion() {
         return EXPECTED;
