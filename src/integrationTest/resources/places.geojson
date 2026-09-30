@@ -1,0 +1,14 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature",
+      "properties": { "name": "alpha", "count": 3, "ratio": 1.5, "active": true },
+      "geometry": { "type": "Point", "coordinates": [1, 2] } },
+    { "type": "Feature",
+      "properties": { "name": "beta \"quoted\"", "count": 7, "ratio": 2.5, "active": false },
+      "geometry": { "type": "Point", "coordinates": [10, 20] } },
+    { "type": "Feature",
+      "properties": { "name": "gamma", "count": 0, "ratio": -0.25, "active": true },
+      "geometry": { "type": "Point", "coordinates": [-30, -40] } }
+  ]
+}

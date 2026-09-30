@@ -136,13 +136,33 @@ try (MapnikMap map = new MapnikMap(800, 400);
 }
 ```
 
+### Features and queries
+
+```java
+try (Datasource ds = Datasource.create(params);
+     Featureset fs = ds.features(FeatureQuery.within(new Box2d(-10, -10, 10, 10)).properties("name"))) {
+    for (Feature f : fs) {
+        f.id();
+        f.attribute("name");     // String, Long, Double, Boolean or null
+        f.geometryKind();        // POINT, POLYGON, ...
+        f.geometryWkt();         // "POINT(1 2)"
+        f.toGeoJson();           // a GeoJSON Feature
+    }
+}
+
+try (Featureset hits = map.queryPoint("places", lon, lat)) { ... }   // in the map's projection
+try (Featureset hits = map.queryMapPoint("places", px, py)) { ... }  // a pixel of the rendered image
+```
+
+A `Featureset` can be read once. Features are snapshots: they stay valid after the set is closed. A map must have an extent (for example from `zoomToBox`) before you query it.
+
 Styles are still defined in XML. Creating styles, rules and symbolizers in code is planned (see [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system. A CMake-installed Mapnik has no `mapnik-config`: look under its install prefix (`find <prefix> -name csv.input`) and set `MAPNIK_INPUT_PLUGINS`.
 
 ## Status
 
-The wrapper covers the core of Mapnik in phases: maps, layers and datasources work today. Features and queries, projections, more rendering options and styling in code are planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
+The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features and queries work today. Projections, more rendering options and styling in code are planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 
@@ -158,7 +178,7 @@ Both have their own README.
 ./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
 ```
 
-Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 

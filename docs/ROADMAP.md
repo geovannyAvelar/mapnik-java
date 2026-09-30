@@ -17,12 +17,16 @@ check real output, such as pixels and XML.
 - **Datasource:** create from typed parameters, type, geometry type, extent, attribute fields.
 - **Runtime:** version number, registered plugin names.
 
-## Phase 2: features and queries
+## Phase 2: features and queries (done)
 
-- Featureset iteration and `Feature`: id, attributes as Java types, geometry as WKT and GeoJSON.
-- `Query`: bounding box, resolution, scale denominator, property names.
-- `Datasource.featuresAtPoint`, `Datasource.features(query)`, `MapnikMap.queryPoint` and
-  `queryMapPoint`.
+- `Featureset` (iterate once, close) and `Feature`: id, typed attributes (`Boolean`, `Long`,
+  `Double`, `String`, null), geometry kind, envelope, geometry as WKT and GeoJSON, whole feature as
+  GeoJSON. Features are plain snapshots with nothing to close.
+- `FeatureQuery`: bounding box, resolution, scale denominator, property names.
+- `Datasource.features(...)`, `Datasource.featuresAtPoint(...)`, `MapnikMap.queryPoint(...)` and
+  `queryMapPoint(...)`.
+- WKT and GeoJSON are written by the shim itself. Mapnik's own writers live in static libraries that
+  are tied to the ICU version Mapnik was built with.
 
 ## Phase 3: projections and geometry
 

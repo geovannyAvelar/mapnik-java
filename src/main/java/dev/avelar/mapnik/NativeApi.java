@@ -121,6 +121,30 @@ interface NativeApi extends Library {
     String mapnik_datasource_field_name(Pointer datasource, int index);
     int mapnik_datasource_field_type(Pointer datasource, int index);
 
+    // features
+    Pointer mapnik_datasource_features(Pointer datasource, double minx, double miny, double maxx, double maxy,
+                                       double resolutionX, double resolutionY, double scaleDenominator,
+                                       String[] propertyNames, int propertyCount);
+    Pointer mapnik_datasource_features_at_point(Pointer datasource, double x, double y, double tolerance);
+    Pointer mapnik_map_query_point(Pointer map, int layerIndex, double x, double y);
+    Pointer mapnik_map_query_map_point(Pointer map, int layerIndex, double px, double py);
+    void mapnik_featureset_free(Pointer featureset);
+    int mapnik_featureset_next(Pointer featureset, PointerByReference out);
+    void mapnik_feature_free(Pointer feature);
+    long mapnik_feature_id(Pointer feature);
+    int mapnik_feature_attribute_count(Pointer feature);
+    String mapnik_feature_attribute_name(Pointer feature, int index);
+    int mapnik_feature_attribute_type(Pointer feature, int index);
+    int mapnik_feature_attribute_bool(Pointer feature, int index);
+    long mapnik_feature_attribute_int(Pointer feature, int index);
+    double mapnik_feature_attribute_double(Pointer feature, int index);
+    String mapnik_feature_attribute_string(Pointer feature, int index);
+    int mapnik_feature_geometry_type(Pointer feature);
+    int mapnik_feature_envelope(Pointer feature, double[] out);
+    String mapnik_feature_geometry_wkt(Pointer feature);
+    String mapnik_feature_geometry_geojson(Pointer feature);
+    String mapnik_feature_to_geojson(Pointer feature);
+
     // render
     int mapnik_map_render_to_file(Pointer map, String path, String format);
     int mapnik_map_render_to_buffer(Pointer map, String format, PointerByReference out, IntByReference len);

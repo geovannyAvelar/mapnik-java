@@ -107,6 +107,24 @@ public final class Datasource implements AutoCloseable {
         return Collections.unmodifiableList(fields);
     }
 
+    /** Features matching the query. Close the result. */
+    public Featureset features(FeatureQuery query) {
+        Box2d b = query.bbox();
+        return Featureset.check(N.mapnik_datasource_features(ptr(), b.minX(), b.minY(), b.maxX(), b.maxY(),
+            query.resolutionX(), query.resolutionY(), query.scaleDenominator(),
+            query.propertyCount() == 0 ? null : query.propertyArray(), query.propertyCount()));
+    }
+
+    /** Features whose bounding box touches {@code box}. Close the result. */
+    public Featureset features(Box2d box) {
+        return features(FeatureQuery.within(box));
+    }
+
+    /** Features within {@code tolerance} of a point, in the datasource's projection. Close the result. */
+    public Featureset featuresAtPoint(double x, double y, double tolerance) {
+        return Featureset.check(N.mapnik_datasource_features_at_point(ptr(), x, y, tolerance));
+    }
+
     Pointer ptr() {
         if (handle == null) {
             throw new IllegalStateException("datasource closed");

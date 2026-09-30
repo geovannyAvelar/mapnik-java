@@ -329,6 +329,21 @@ public final class MapnikMap implements AutoCloseable {
         return this;
     }
 
+    // ------------------------------------------------------------------ queries
+
+    /**
+     * Features of a layer at a point, given in the map's projection. The layer must be queryable
+     * (see {@link Layer#setQueryable}) for some plugins. Close the result.
+     */
+    public Featureset queryPoint(String layer, double x, double y) {
+        return Featureset.check(N.mapnik_map_query_point(ptr(), indexOf(layer), x, y));
+    }
+
+    /** Features of a layer under pixel (px, py) of the map image. Close the result. */
+    public Featureset queryMapPoint(String layer, double px, double py) {
+        return Featureset.check(N.mapnik_map_query_map_point(ptr(), indexOf(layer), px, py));
+    }
+
     // ------------------------------------------------------------------ styles
 
     /** Names of the styles defined in the map, sorted. */

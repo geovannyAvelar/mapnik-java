@@ -4,6 +4,8 @@
 #include "../mapnik_c.h"
 
 #include <mapnik/datasource.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/featureset.hpp>
 #include <mapnik/geometry/box2d.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/map.hpp>
@@ -12,6 +14,8 @@
 #include <exception>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 struct mapnik_map {
     mapnik::Map map;
@@ -24,6 +28,15 @@ struct mapnik_params {
 
 struct mapnik_datasource {
     std::shared_ptr<mapnik::datasource> ds;
+};
+
+struct mapnik_featureset {
+    mapnik::featureset_ptr fs;  // may be null: an empty result
+};
+
+struct mapnik_feature {
+    mapnik::feature_ptr feature;
+    std::vector<std::pair<std::string, std::size_t>> attributes;  // name, slot; sorted by name
 };
 
 namespace mc {

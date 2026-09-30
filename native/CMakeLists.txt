@@ -35,7 +35,7 @@ if(INSTALLED_MINOR AND NOT INSTALLED_MINOR STREQUAL TARGET_MINOR)
 endif()
 
 add_library(mapnik_c SHARED
-  src/runtime.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/render.cpp)
+  src/runtime.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/feature.cpp src/geometry_out.cpp src/render.cpp)
 
 if(MAPNIK_FOUND_VIA STREQUAL "package")
   target_link_libraries(mapnik_c PRIVATE mapnik::mapnik)
@@ -51,7 +51,13 @@ else()
   mapnik_config(MAPNIK_CFLAGS --defines --includes --dep-includes)
   mapnik_config(MAPNIK_LIBS   --libs --ldflags --dep-libs)
   target_compile_options(mapnik_c PRIVATE ${MAPNIK_CFLAGS})
+
   target_link_libraries(mapnik_c PRIVATE ${MAPNIK_LIBS})
+endif()
+
+# Fail the build, not the first call, if a symbol is missing.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_options(mapnik_c PRIVATE -Wl,--no-undefined)
 endif()
 
 # Drop lib next to where Gradle expects it.

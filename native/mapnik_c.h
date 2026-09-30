@@ -23,6 +23,8 @@ typedef struct mapnik_map mapnik_map_t;
 typedef struct mapnik_layer mapnik_layer_t;
 typedef struct mapnik_params mapnik_params_t;
 typedef struct mapnik_datasource mapnik_datasource_t;
+typedef struct mapnik_featureset mapnik_featureset_t;
+typedef struct mapnik_feature mapnik_feature_t;
 
 /* ---- runtime ------------------------------------------------------------------------------ */
 
@@ -178,6 +180,47 @@ int         mapnik_datasource_field_count(mapnik_datasource_t* ds);
 const char* mapnik_datasource_field_name(mapnik_datasource_t* ds, int index);
 /* 1 integer, 2 float, 3 double, 4 string, 5 boolean, 6 geometry, 7 object. */
 int         mapnik_datasource_field_type(mapnik_datasource_t* ds, int index);
+
+/* ---- features ----------------------------------------------------------------------------- */
+
+/* Query a datasource. Resolution is in pixels per map unit on each axis; property_names may be NULL.
+ * NULL on error. */
+mapnik_featureset_t* mapnik_datasource_features(mapnik_datasource_t* ds,
+                                                double minx, double miny, double maxx, double maxy,
+                                                double resolution_x, double resolution_y, double scale_denominator,
+                                                const char* const* property_names, int property_count);
+mapnik_featureset_t* mapnik_datasource_features_at_point(mapnik_datasource_t* ds, double x, double y, double tolerance);
+/* Features of a layer at a point in map coordinates, or at a pixel. NULL on error. */
+mapnik_featureset_t* mapnik_map_query_point(mapnik_map_t* m, int layer_index, double x, double y);
+mapnik_featureset_t* mapnik_map_query_map_point(mapnik_map_t* m, int layer_index, double px, double py);
+
+void mapnik_featureset_free(mapnik_featureset_t* fs);
+/* Next feature into *out: 1 got one, 0 no more, -1 error. Free it with mapnik_feature_free. */
+int  mapnik_featureset_next(mapnik_featureset_t* fs, mapnik_feature_t** out);
+
+void      mapnik_feature_free(mapnik_feature_t* f);
+long long mapnik_feature_id(mapnik_feature_t* f);
+
+/* Attributes by index, in name order. */
+int         mapnik_feature_attribute_count(mapnik_feature_t* f);
+const char* mapnik_feature_attribute_name(mapnik_feature_t* f, int index);
+/* 0 null, 1 boolean, 2 integer, 3 double, 4 string, -1 bad index. */
+int         mapnik_feature_attribute_type(mapnik_feature_t* f, int index);
+int         mapnik_feature_attribute_bool(mapnik_feature_t* f, int index);
+long long   mapnik_feature_attribute_int(mapnik_feature_t* f, int index);
+double      mapnik_feature_attribute_double(mapnik_feature_t* f, int index);
+/* The value as text, whatever its type. NULL for a bad index. */
+const char* mapnik_feature_attribute_string(mapnik_feature_t* f, int index);
+
+/* 0 unknown, 1 point, 2 linestring, 3 polygon, 4 multipoint, 5 multilinestring, 6 multipolygon,
+ * 7 geometry collection. */
+int         mapnik_feature_geometry_type(mapnik_feature_t* f);
+int         mapnik_feature_envelope(mapnik_feature_t* f, double* out);
+/* NULL on error. */
+const char* mapnik_feature_geometry_wkt(mapnik_feature_t* f);
+const char* mapnik_feature_geometry_geojson(mapnik_feature_t* f);
+/* The whole feature (geometry and attributes) as a GeoJSON Feature. NULL on error. */
+const char* mapnik_feature_to_geojson(mapnik_feature_t* f);
 
 /* ---- render ------------------------------------------------------------------------------- */
 
