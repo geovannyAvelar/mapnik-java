@@ -38,11 +38,16 @@ The shared library is written to `build/native/libmapnik_c.so`. Gradle passes th
 
 ## Installation
 
-Releases of the Java jar are published to Maven Central. It does **not** contain the native shim, because the shim has to be compiled against the Mapnik installed on your machine. Build `libmapnik_c.so` as described above and make it available to JNA.
+Releases are published to Maven Central. There are two ways to get a working Mapnik.
+
+### Prebuilt natives: nothing to install
+
+On Linux x86_64, add the natives artifact next to the library:
 
 ```kotlin
 // Gradle
 implementation("dev.avelar:mapnik-java:4.1.0.0")
+runtimeOnly("dev.avelar:mapnik-java-natives-linux-x86_64:4.1.0.0")
 ```
 
 ```xml
@@ -52,6 +57,40 @@ implementation("dev.avelar:mapnik-java:4.1.0.0")
   <artifactId>mapnik-java</artifactId>
   <version>4.1.0.0</version>
 </dependency>
+<dependency>
+  <groupId>dev.avelar</groupId>
+  <artifactId>mapnik-java-natives-linux-x86_64</artifactId>
+  <version>4.1.0.0</version>
+  <scope>runtime</scope>
+</dependency>
+```
+
+That is all. The jar holds Mapnik, everything it depends on (ICU, PROJ, FreeType, HarfBuzz, Cairo, libpng, libjpeg, libtiff, libwebp and more), the `csv`, `geojson`, `geobuf`, `topojson`, `shape`, `raster`, `sqlite` and `tiles` input plugins, the DejaVu fonts and PROJ's data. On first use it unpacks to `~/.cache/mapnik-java/<id>` (set `-Dmapnik.native.cache=/some/dir` to change that), checks every file against a SHA-256 list, and reuses the directory afterwards. Plugins and fonts are registered for you, so `Mapnik.isBundled()` is true and you can start drawing.
+
+What to know:
+
+- **Host:** Linux x86_64 with glibc 2.39 or later and the C++ runtime from GCC 13 or later: Ubuntu 24.04, Debian 13, Fedora 40 and newer. The C and C++ runtimes are the host's, not bundled. The bundle is built on Ubuntu 24.04 because Mapnik 4.1 needs Boost 1.83, HarfBuzz 8.3 and PROJ 9.4.
+- **Plugins left out:** `gdal`, `ogr`, `postgis` and `pgraster`, because each pulls in a very large dependency tree. To use them, build against a Mapnik of your own (below).
+- **Licences:** Mapnik is LGPL and the bundled libraries have their own licences. The jar carries each one under `licenses/`, and a `NOTICE` listing the packages. The libraries are separate shared files, which you can replace.
+- **Size:** tens of megabytes.
+
+### Your own Mapnik
+
+Without the natives artifact, the library loads `libmapnik_c` from the system. Build it against your Mapnik as described in [Build](#build), then make it available to JNA, for example with `-Djna.library.path=build/native` or `-Dmapnik.native.dir=/path`.
+
+Which one is used, first match wins:
+
+1. The directory in `-Dmapnik.native.dir` or `MAPNIK_JAVA_NATIVE_DIR`.
+2. A directory in `jna.library.path` that holds `libmapnik_c`.
+3. The natives artifact on the class path.
+4. The system's library path.
+
+### Building the natives yourself
+
+```bash
+scripts/build-natives-linux.sh     # needs Docker; compiles Mapnik on the first run
+scripts/test-natives-linux.sh      # runs the integration tests on a machine with no Mapnik
+./gradlew nativesJar               # packages build/natives as the jar
 ```
 
 ## Versioning

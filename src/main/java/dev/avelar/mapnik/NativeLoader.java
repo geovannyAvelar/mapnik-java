@@ -61,8 +61,18 @@ final class NativeLoader {
                 NativeLibrary.addSearchPath(LIBRARY_NAME, bundled.resolve("lib").toString());
             }
         }
-        NativeApi api = Native.load(LIBRARY_NAME, NativeApi.class,
-            Collections.singletonMap(Library.OPTION_STRING_ENCODING, "UTF-8"));
+        NativeApi api;
+        try {
+            api = Native.load(LIBRARY_NAME, NativeApi.class,
+                Collections.singletonMap(Library.OPTION_STRING_ENCODING, "UTF-8"));
+        } catch (UnsatisfiedLinkError e) {
+            if (bundled == null) {
+                throw e;
+            }
+            throw new UnsatisfiedLinkError("the bundled native libraries in " + bundled + " could not be loaded: "
+                + e.getMessage() + ". The bundle is built on Ubuntu 24.04 and needs glibc 2.39 or later and the C++ "
+                + "runtime of GCC 13 or later; on an older system build the shim against a Mapnik of your own.");
+        }
         if (bundled != null) {
             setUpBundle(api, bundled);
             bundleDir = bundled;
@@ -121,9 +131,16 @@ final class NativeLoader {
 
     /** After loading a bundle: tell PROJ where its data is, and register the bundled plugins and fonts. */
     private static void setUpBundle(NativeApi api, Path bundle) {
-        Mapnik.check(api.mapnik_set_environment(bundle.resolve("proj").toString()));
-        Mapnik.check(api.mapnik_register_datasources(bundle.resolve("plugins").resolve("input").toString()));
-        Mapnik.check(api.mapnik_register_fonts(bundle.resolve("fonts").toString()));
+        // NativeApi.INSTANCE is not assigned yet, so check with the api we were given.
+        check(api, api.mapnik_set_environment(bundle.resolve("proj").toString()));
+        check(api, api.mapnik_register_datasources(bundle.resolve("plugins").resolve("input").toString()));
+        check(api, api.mapnik_register_fonts(bundle.resolve("fonts").toString()));
+    }
+
+    private static void check(NativeApi api, int rc) {
+        if (rc != 0) {
+            throw new MapnikException("setting up the bundled natives failed: " + api.mapnik_last_error());
+        }
     }
 
     // ------------------------------------------------------------------ platform
@@ -214,6 +231,7 @@ final class NativeLoader {
             for (Entry e : entries) {
                 copyVerified(source, e, staging);
             }
+            Files.write(staging.resolve("MANIFEST"), manifest.getBytes(StandardCharsets.UTF_8));
             Files.write(staging.resolve(".complete"), new byte[0]);
             try {
                 Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);

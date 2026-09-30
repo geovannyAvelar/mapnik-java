@@ -12,9 +12,14 @@ jobs:
     name: Integration tests
     uses: ./.github/workflows/integration.yml
 
+  # The prebuilt native libraries, tested on a machine with no Mapnik before anything is published.
+  natives:
+    name: Native libraries
+    uses: ./.github/workflows/natives.yml
+
   publish:
     name: Build, Sign & Publish
-    needs: integration
+    needs: [integration, natives]
     runs-on: ubuntu-latest
 
     permissions:
@@ -40,6 +45,12 @@ jobs:
             exit 1
           fi
 
+      - name: Download the native bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: natives-linux-x86_64
+          path: build/natives
+
       - run: ./gradlew build
 
       - name: Publish to Maven Central (Sonatype Central Portal)
@@ -48,4 +59,4 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: ./gradlew publishMavenJavaPublicationToCentralPortal
+        run: ./gradlew publishMavenJavaPublicationToCentralPortal publishNativesPublicationToCentralPortal

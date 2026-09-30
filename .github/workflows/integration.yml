@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/mapnik-install
-          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v1
+          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v2
 
       - name: Build Mapnik ${{ env.MAPNIK_VERSION }}
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
@@ -61,7 +61,7 @@ jobs:
           git clone --branch "v$MAPNIK_VERSION" --depth 1 --recurse-submodules --shallow-submodules \
             https://github.com/mapnik/mapnik.git "$RUNNER_TEMP/mapnik"
           cd "$RUNNER_TEMP/mapnik"
-          cmake --preset linux-ci-release
+          cmake --preset linux-ci-release -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1
           cmake --build --preset linux-ci-release
           cmake --install build --prefix "$HOME/mapnik-install"
 
@@ -71,7 +71,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/mapnik-install
-          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v1
+          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v2
 
       # A CMake-installed Mapnik has no mapnik-config: point CMake at its package
       # config and find the input plugins by looking for a known one.

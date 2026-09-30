@@ -1,0 +1,64 @@
+name: Natives
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'natives/**'
+      - 'native/**'
+      - 'gradle.properties'
+      - 'scripts/*natives*'
+      - 'src/**'
+      - '.github/workflows/natives.yml'
+  pull_request:
+    paths:
+      - 'natives/**'
+      - 'native/**'
+      - 'gradle.properties'
+      - 'scripts/*natives*'
+      - '.github/workflows/natives.yml'
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read target Mapnik version
+        run: echo "MAPNIK_VERSION=$(grep '^mapnik.version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Compiles Mapnik, builds the shim against it, and gathers everything into build/natives.
+      # The layer cache keeps the long Mapnik compile for later runs.
+      - name: Build the bundle
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: natives/linux-x86_64/Dockerfile
+          target: export
+          build-args: MAPNIK_VERSION=${{ env.MAPNIK_VERSION }}
+          outputs: type=local,dest=build/natives
+          cache-from: type=gha,scope=natives-linux-x86_64
+          cache-to: type=gha,mode=max,scope=natives-linux-x86_64
+
+      - name: What was built
+        run: |
+          ls -la build/natives/linux-x86_64 build/natives/linux-x86_64/lib | head -60
+          du -sh build/natives/linux-x86_64
+          cat build/natives/linux-x86_64/NOTICE
+
+      # A clean Ubuntu with only a JDK: the integration tests must pass using nothing but the bundle.
+      - name: Test on a machine with no Mapnik
+        run: docker buildx build -f natives/linux-x86_64/Dockerfile.test --progress plain .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natives-linux-x86_64
+          path: build/natives
+          retention-days: 14
