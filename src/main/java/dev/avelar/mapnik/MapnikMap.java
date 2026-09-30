@@ -13,6 +13,7 @@ public final class MapnikMap implements AutoCloseable {
     private Pointer handle;
 
     public MapnikMap(int width, int height) {
+        Mapnik.verifyVersion();
         handle = N.mapnik_map_create(width, height);
         if (handle == null) {
             throw new MapnikException(N.mapnik_last_error());

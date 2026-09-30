@@ -25,6 +25,14 @@ jobs:
 
       - run: chmod +x ./gradlew
 
+      - name: Check tag matches project version
+        run: |
+          VERSION=$(./gradlew -q printVersion)
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match project version v$VERSION"
+            exit 1
+          fi
+
       - run: ./gradlew build
 
       - name: Publish to Maven Central (Sonatype Central Portal)

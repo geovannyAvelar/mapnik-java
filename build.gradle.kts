@@ -5,8 +5,11 @@ plugins {
     id("com.gradleup.nmcp") version "0.0.9"
 }
 
+val mapnikVersion = providers.gradleProperty("mapnik.version").get()
+val wrapperRevision = providers.gradleProperty("wrapper.revision").get()
+
 group = "dev.avelar"
-version = "0.1.0"
+version = "$mapnikVersion.$wrapperRevision"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -35,6 +38,17 @@ val nativeDir = layout.buildDirectory.dir("native")
 tasks.test {
     useJUnitPlatform()
     systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
+}
+
+tasks.processResources {
+    inputs.property("mapnikVersion", mapnikVersion)
+    filesMatching("mapnik-java.properties") {
+        expand("mapnikVersion" to mapnikVersion)
+    }
+}
+
+tasks.register("printVersion") {
+    doLast { println(project.version) }
 }
 
 tasks.withType<JavaCompile> {

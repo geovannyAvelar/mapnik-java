@@ -1,11 +1,31 @@
 package dev.avelar.mapnik;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.logging.Logger;
+
 /** Global Mapnik setup. */
 public final class Mapnik {
+    private static final Logger LOG = Logger.getLogger(Mapnik.class.getName());
+    private static final String EXPECTED = loadExpectedVersion();
+    private static volatile boolean verified;
+
     private Mapnik() {}
 
+    /** Version of the Mapnik library the native shim is loaded against. */
     public static String version() {
         return NativeApi.INSTANCE.mapnik_version();
+    }
+
+    /** Version of Mapnik this wrapper release was built and tested against. */
+    public static String expectedVersion() {
+        return EXPECTED;
+    }
+
+    /** True when the loaded Mapnik has the same major.minor version as {@link #expectedVersion()}. */
+    public static boolean isCompatible() {
+        return sameMinor(version(), EXPECTED);
     }
 
     /** Load input plugins (postgis, shape, gdal...) from dir. Call once at startup. */
@@ -18,9 +38,41 @@ public final class Mapnik {
         check(NativeApi.INSTANCE.mapnik_register_fonts(dir));
     }
 
+    /** Log a warning, once, if the loaded Mapnik differs in major.minor from the expected one. */
+    static void verifyVersion() {
+        if (verified) {
+            return;
+        }
+        verified = true;
+        String actual = version();
+        if (!sameMinor(actual, EXPECTED)) {
+            LOG.warning("mapnik-java was built for Mapnik " + EXPECTED
+                + " but libmapnik_c is linked against Mapnik " + actual
+                + ". The API may differ; rebuild the native shim and use a matching mapnik-java release.");
+        }
+    }
+
+    static boolean sameMinor(String a, String b) {
+        String[] x = a.split("\\.");
+        String[] y = b.split("\\.");
+        return x.length >= 2 && y.length >= 2 && x[0].equals(y[0]) && x[1].equals(y[1]);
+    }
+
     static void check(int rc) {
         if (rc != 0) {
             throw new MapnikException(NativeApi.INSTANCE.mapnik_last_error());
         }
+    }
+
+    private static String loadExpectedVersion() {
+        Properties p = new Properties();
+        try (InputStream in = Mapnik.class.getResourceAsStream("/mapnik-java.properties")) {
+            if (in != null) {
+                p.load(in);
+            }
+        } catch (IOException e) {
+            // fall through to "unknown"
+        }
+        return p.getProperty("mapnik.version", "unknown");
     }
 }

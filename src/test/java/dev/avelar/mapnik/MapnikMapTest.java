@@ -29,6 +29,13 @@ class MapnikMapTest {
     }
 
     @Test
+    void loadedMapnikMatchesExpectedVersion() {
+        assertNotEquals("unknown", Mapnik.expectedVersion());
+        assertTrue(Mapnik.isCompatible(),
+            "built for " + Mapnik.expectedVersion() + " but native is " + Mapnik.version());
+    }
+
+    @Test
     void rendersPng() {
         try (MapnikMap map = new MapnikMap(256, 256)) {
             map.loadString(STYLE, Paths.get("."))

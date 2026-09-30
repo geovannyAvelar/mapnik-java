@@ -1,0 +1,39 @@
+name: Check Mapnik release
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare with latest Mapnik release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT=$(grep '^mapnik.version=' gradle.properties | cut -d= -f2)
+          LATEST=$(gh api repos/mapnik/mapnik/releases/latest --jq .tag_name | sed 's/^v//')
+          echo "current=$CURRENT latest=$LATEST"
+          if [ "$CURRENT" = "$LATEST" ]; then
+            exit 0
+          fi
+          TITLE="Update to Mapnik $LATEST"
+          EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq length)
+          if [ "$EXISTING" = "0" ]; then
+            gh issue create --title "$TITLE" --body "Mapnik $LATEST is out. This wrapper targets $CURRENT.
+
+          Checklist:
+          - [ ] Install Mapnik $LATEST and build the shim (\`cmake -S native -B build/cmake && cmake --build build/cmake\`)
+          - [ ] Fix any API changes in \`native/mapnik_c.cpp\`
+          - [ ] Set \`mapnik.version=$LATEST\` and \`wrapper.revision=0\` in \`gradle.properties\`
+          - [ ] Run \`./gradlew test\` against the new Mapnik
+          - [ ] Tag \`v$LATEST.0\`"
+          fi
