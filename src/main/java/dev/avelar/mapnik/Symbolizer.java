@@ -71,6 +71,103 @@ public final class Symbolizer {
         return s;
     }
 
+    /**
+     * Draw text made of several runs, each with its own look. The symbolizer itself still needs a
+     * {@code face-name} (or {@code fontset-name}) as the default, which each run may override:
+     *
+     * <pre>{@code
+     * Symbolizer.formattedText(TextFormat.of("[name]").fontSize(14),
+     *                          TextFormat.of("' ' + [pop]").fontSize(10).fill("gray"))
+     *     .faceName("DejaVu Sans Bold");
+     * }</pre>
+     */
+    public static Symbolizer formattedText(TextFormat... formats) {
+        if (formats.length == 0) {
+            throw new IllegalArgumentException("formatted text needs at least one TextFormat");
+        }
+        Symbolizer s = new Symbolizer("TextSymbolizer");
+        for (TextFormat f : formats) {
+            s.children.add(f.toXml());
+        }
+        return s;
+    }
+
+    /**
+     * Try these alternatives in order until one fits. Only for {@link #formattedText}. Sets
+     * {@code placement-type} to {@code list}.
+     */
+    public Symbolizer placementList(TextPlacement... placements) {
+        requireElement("TextSymbolizer", "placements");
+        if (children.isEmpty()) {
+            throw new IllegalStateException("placement alternatives go with formatted text: use Symbolizer.formattedText");
+        }
+        attributes.put("placement-type", "list");
+        for (TextPlacement p : placements) {
+            children.add(p.toXml());
+        }
+        return this;
+    }
+
+    /**
+     * Try these positions around a point, for example {@code "E,NE,SE,W"} (east, north-east and so on)
+     * and use the first that fits. Sets {@code placement-type} to {@code simple}.
+     */
+    public Symbolizer placementPositions(String positions) {
+        requireElement("TextSymbolizer", "placement positions");
+        attributes.put("placement-type", "simple");
+        attributes.put("placements", positions);
+        return this;
+    }
+
+    /**
+     * A group of symbols and labels drawn together for features that share a key, such as a cluster
+     * of points. Add rules with {@link #groupRule} and choose how members are laid out.
+     *
+     * <p>Mapnik draws nothing for a group unless it has a column range and a key: call
+     * {@link #groupColumns} too.
+     */
+    public static Symbolizer group() { return new Symbolizer("GroupSymbolizer"); }
+
+    public Symbolizer groupRule(GroupRule rule) {
+        requireElement("GroupSymbolizer", "group rules");
+        children.add(rule.toXml());
+        return this;
+    }
+
+    /**
+     * Which columns of the group layout this symbolizer fills ({@code start-column}, 1-based, and how
+     * many, {@code num-columns}) and the expression that says which features belong together
+     * ({@code repeat-key}, for example {@code "[id]"}). Mapnik draws a group only when all three are
+     * set. Only for {@link #group()}.
+     */
+    public Symbolizer groupColumns(int startColumn, int numColumns, String repeatKey) {
+        requireElement("GroupSymbolizer", "group columns");
+        attributes.put("start-column", Integer.toString(startColumn));
+        attributes.put("num-columns", Integer.toString(numColumns));
+        attributes.put("repeat-key", repeatKey);
+        return this;
+    }
+
+    /** Lay group members out in a column, {@code itemMargin} pixels apart. Only for {@link #group()}. */
+    public Symbolizer simpleLayout(double itemMargin) {
+        requireElement("GroupSymbolizer", "a layout");
+        children.add("<SimpleLayout item-margin=\"" + Xml.number(itemMargin) + "\"/>");
+        return this;
+    }
+
+    /** Lay group members out in pairs side by side. Only for {@link #group()}. */
+    public Symbolizer pairLayout(double itemMargin) {
+        requireElement("GroupSymbolizer", "a layout");
+        children.add("<PairLayout item-margin=\"" + Xml.number(itemMargin) + "\"/>");
+        return this;
+    }
+
+    private void requireElement(String required, String what) {
+        if (!required.equals(element)) {
+            throw new IllegalStateException(what + " belong to a " + required + ", not a " + element);
+        }
+    }
+
     /** A text label drawn on top of an image, such as a road shield. */
     public static Symbolizer shield(String expression, String file) {
         Symbolizer s = new Symbolizer("ShieldSymbolizer").attr("file", file);
