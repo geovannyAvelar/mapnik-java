@@ -1,4 +1,4 @@
-package org.mapnik;
+package dev.avelar.mapnik;
 
 /** Global Mapnik setup. */
 public final class Mapnik {

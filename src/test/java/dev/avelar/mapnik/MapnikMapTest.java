@@ -1,4 +1,4 @@
-package org.mapnik;
+package dev.avelar.mapnik;
 
 import static org.junit.jupiter.api.Assertions.*;
 

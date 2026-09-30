@@ -1,4 +1,4 @@
-package org.mapnik;
+package dev.avelar.mapnik;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;

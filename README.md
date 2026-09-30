@@ -11,7 +11,7 @@ Java (MapnikMap)  ->  JNA (NativeApi)  ->  libmapnik_c.so (C shim)  ->  Mapnik (
 ```
 
 - `native/` holds the C shim (`mapnik_c.h`, `mapnik_c.cpp`) and its CMake build. The shim catches every C++ exception and exposes the message through `mapnik_last_error()`, so no exception crosses the FFI boundary.
-- `src/main/java/org/mapnik/` holds the Java side:
+- `src/main/java/dev/avelar/mapnik/` holds the Java side:
   - `Mapnik`: global setup (version, datasource plugins, fonts).
   - `MapnikMap`: load a style, set the extent, render to a file or to bytes.
   - `NativeApi`: the raw JNA mapping of `mapnik_c.h`.
@@ -66,10 +66,10 @@ Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plug
 ## Layout
 
 ```
-native/                  C shim and CMake build
-src/main/java/org/mapnik Java wrapper
-src/test/java/org/mapnik JUnit tests
-pom.xml                  Maven build
+native/                       C shim and CMake build
+src/main/java/dev/avelar/mapnik   Java wrapper
+src/test/java/dev/avelar/mapnik   JUnit tests
+pom.xml                       Maven build
 ```
 
 ## License

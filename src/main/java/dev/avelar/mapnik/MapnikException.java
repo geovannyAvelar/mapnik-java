@@ -1,4 +1,4 @@
-package org.mapnik;
+package dev.avelar.mapnik;
 
 public class MapnikException extends RuntimeException {
     public MapnikException(String message) {
