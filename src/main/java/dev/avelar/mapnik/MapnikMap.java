@@ -139,6 +139,10 @@ public final class MapnikMap implements AutoCloseable {
         return this;
     }
 
+    public MapnikMap setBackgroundImageCompOp(BlendMode mode) {
+        return setBackgroundImageCompOp(mode.xmlName());
+    }
+
     public double backgroundImageOpacity() { return N.mapnik_map_get_background_image_opacity(ptr()); }
 
     public MapnikMap setBackgroundImageOpacity(double opacity) {

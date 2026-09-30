@@ -365,6 +365,25 @@ int  mapnik_image_save(mapnik_image_t* img, const char* path, const char* format
 /* Allocates *out. Free with mapnik_buffer_free(). */
 int  mapnik_image_save_to_buffer(mapnik_image_t* img, const char* format, unsigned char** out, int* len);
 
+/* ---- image operations ----------------------------------------------------------------------- */
+
+/* Apply filters, in place, with the syntax of the image-filters style attribute, for example
+ * "blur", "agg-stack-blur(5,5)", "invert gray". scale_factor scales sizes inside filters. */
+int  mapnik_image_filter(mapnik_image_t* img, const char* filters, double scale_factor);
+/* Draw src onto dst at (dx, dy) with a blend mode name such as "src-over" or "multiply". */
+int  mapnik_image_composite(mapnik_image_t* dst, mapnik_image_t* src, const char* mode, double opacity, int dx, int dy);
+/* New image. method is a name such as "bilinear" or "lanczos". NULL on error. */
+mapnik_image_t* mapnik_image_scale(mapnik_image_t* img, int width, int height, const char* method);
+mapnik_image_t* mapnik_image_crop(mapnik_image_t* img, int x, int y, int width, int height);
+mapnik_image_t* mapnik_image_copy(mapnik_image_t* img);
+/* Multiply every alpha by opacity (0 to 1), in place. */
+int  mapnik_image_apply_opacity(mapnik_image_t* img, double opacity);
+/* Make pixels of this colour transparent, blending partly matching ones, in place. */
+int  mapnik_image_color_to_alpha(mapnik_image_t* img, const char* color);
+/* Size of an image file or of encoded data, without decoding the pixels. */
+int  mapnik_image_probe_file(const char* path, int* width, int* height);
+int  mapnik_image_probe_bytes(const unsigned char* data, int length, int* width, int* height);
+
 /* ---- render ------------------------------------------------------------------------------- */
 
 /* scale_factor scales line widths, symbols and text (1.0 is normal; 2.0 suits a high-dpi image).

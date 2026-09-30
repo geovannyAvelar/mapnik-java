@@ -134,6 +134,10 @@ public final class Layer implements AutoCloseable {
         return this;
     }
 
+    public Layer setCompOp(BlendMode mode) {
+        return setCompOp(mode.xmlName());
+    }
+
     // ------------------------------------------------------------------ child layers
 
     /** Add a copy of {@code child} under this layer, to group layers. */

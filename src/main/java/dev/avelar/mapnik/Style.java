@@ -49,6 +49,10 @@ public final class Style {
         return this;
     }
 
+    public Style compOp(BlendMode mode) {
+        return compOp(mode.xmlName());
+    }
+
     public Style filterMode(FilterMode mode) {
         attributes.put("filter-mode", mode.xml);
         return this;

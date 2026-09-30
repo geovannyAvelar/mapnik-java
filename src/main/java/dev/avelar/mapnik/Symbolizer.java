@@ -131,6 +131,8 @@ public final class Symbolizer {
     /** Compositing mode, such as {@code multiply} or {@code screen}. */
     public Symbolizer compOp(String v) { return attr("comp-op", v); }
 
+    public Symbolizer compOp(BlendMode mode) { return compOp(mode.xmlName()); }
+
     /** Markers and dots: width and height in pixels. */
     public Symbolizer size(double width, double height) { return attr("width", width).attr("height", height); }
 

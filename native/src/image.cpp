@@ -110,3 +110,4 @@ int mapnik_image_save_to_buffer(mapnik_image_t* img, const char* format, unsigne
 
 // Used by render.cpp.
 mapnik::image_rgba8& mc_image_of(mapnik_image_t* img) { return img->image; }
+mapnik_image_t* mc_image_wrap(mapnik::image_rgba8&& im) { return new mapnik_image(std::move(im)); }

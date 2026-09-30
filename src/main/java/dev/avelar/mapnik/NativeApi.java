@@ -231,6 +231,17 @@ interface NativeApi extends Library {
     int mapnik_image_save(Pointer image, String path, String format);
     int mapnik_image_save_to_buffer(Pointer image, String format, PointerByReference out, IntByReference len);
 
+    // image operations
+    int mapnik_image_filter(Pointer image, String filters, double scaleFactor);
+    int mapnik_image_composite(Pointer dst, Pointer src, String mode, double opacity, int dx, int dy);
+    Pointer mapnik_image_scale(Pointer image, int width, int height, String method);
+    Pointer mapnik_image_crop(Pointer image, int x, int y, int width, int height);
+    Pointer mapnik_image_copy(Pointer image);
+    int mapnik_image_apply_opacity(Pointer image, double opacity);
+    int mapnik_image_color_to_alpha(Pointer image, String color);
+    int mapnik_image_probe_file(String path, int[] width, int[] height);
+    int mapnik_image_probe_bytes(byte[] data, int length, int[] width, int[] height);
+
     // render
     int mapnik_map_render_to_file(Pointer map, String path, String format, double scaleFactor, int offsetX, int offsetY);
     int mapnik_map_render_to_buffer(Pointer map, String format, PointerByReference out, IntByReference len,
