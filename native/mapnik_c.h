@@ -337,6 +337,30 @@ int  mapnik_memory_datasource_size(mapnik_datasource_t* ds);
 void mapnik_memory_datasource_clear(mapnik_datasource_t* ds);
 void mapnik_memory_datasource_set_envelope(mapnik_datasource_t* ds, double minx, double miny, double maxx, double maxy);
 
+/* ---- geometry operations -------------------------------------------------------------------- */
+
+/* Each takes a geometry as 2D WKB. Operations that return a geometry return it as WKT, or NULL on
+ * error. Scalars go in caller arrays. All return 0 or a valid result on success and -1 on error unless
+ * noted. */
+int         mapnik_geometry_centroid(const unsigned char* wkb, int length, double* out_xy);
+/* For a polygon. scale_factor is polylabel's precision as a fraction of the polygon's size (try 1). */
+int         mapnik_geometry_interior_point(const unsigned char* wkb, int length, double scale_factor, double* out_xy);
+/* out_xyd receives the closest point's x and y, then its distance from (x, y). */
+int         mapnik_geometry_closest_point(const unsigned char* wkb, int length, double x, double y, double* out_xyd);
+/* 1 valid, 0 invalid, -1 error. The reason is in mapnik_geometry_validity_reason. */
+int         mapnik_geometry_is_valid(const unsigned char* wkb, int length);
+const char* mapnik_geometry_validity_reason(const unsigned char* wkb, int length);
+/* 1 simple, 0 not, -1 error. */
+int         mapnik_geometry_is_simple(const unsigned char* wkb, int length);
+/* Fix ring orientation and closure. */
+const char* mapnik_geometry_correct(const unsigned char* wkb, int length);
+/* algorithm: radial-distance, douglas-peucker, visvalingam-whyatt or zhao-saalfeld. */
+const char* mapnik_geometry_simplify(const unsigned char* wkb, int length, const char* algorithm, double tolerance);
+/* Parallel copy of lines at a distance: positive to the left, negative to the right. */
+const char* mapnik_geometry_offset(const unsigned char* wkb, int length, double distance);
+/* In the transform's forward direction. Error if any point cannot be transformed. */
+const char* mapnik_geometry_reproject(const unsigned char* wkb, int length, mapnik_transform_t* transform);
+
 /* ---- projections -------------------------------------------------------------------------- */
 
 /* params is anything Mapnik accepts: "epsg:3857", "+proj=utm +zone=33 ...". NULL on error. */

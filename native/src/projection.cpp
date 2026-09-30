@@ -24,11 +24,6 @@ struct mapnik_projection {
     }
 };
 
-struct mapnik_transform {
-    mapnik::proj_transform transform;
-    mapnik_transform(mapnik::projection const& a, mapnik::projection const& b) : transform(a, b) {}
-};
-
 using namespace mc;
 
 namespace {

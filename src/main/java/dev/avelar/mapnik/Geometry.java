@@ -75,6 +75,153 @@ public abstract class Geometry {
         return toWkt();
     }
 
+    // ================================================================== operations
+
+    /** The closest point on a geometry to some location, and how far away it is. */
+    public static final class Nearest {
+        private final Point2d point;
+        private final double distance;
+
+        Nearest(Point2d point, double distance) {
+            this.point = point;
+            this.distance = distance;
+        }
+
+        public Point2d point() { return point; }
+
+        /** The distance from the location to {@link #point()}, in the geometry's units. 0 if it is on the geometry. */
+        public double distance() { return distance; }
+
+        @Override
+        public String toString() {
+            return "Nearest[" + point + ", distance=" + distance + "]";
+        }
+    }
+
+    /** The centre of mass. Throws {@link MapnikException} for an empty geometry. */
+    public Point2d centroid() {
+        byte[] w = toWkb();
+        double[] xy = new double[2];
+        Mapnik.check(NativeApi.INSTANCE.mapnik_geometry_centroid(w, w.length, xy));
+        return new Point2d(xy[0], xy[1]);
+    }
+
+    /**
+     * A point that lies inside a polygon, as far from its edges as reasonably possible (a good place
+     * for a label, unlike the centroid of a C shape). For a multi polygon it uses the polygon with the
+     * largest bounding box. Throws {@link IllegalStateException} for other kinds.
+     */
+    public Point2d interiorPoint() {
+        Polygon target;
+        if (this instanceof Polygon) {
+            target = (Polygon) this;
+        } else if (this instanceof MultiPolygon && !((MultiPolygon) this).polygons().isEmpty()) {
+            target = null;
+            double best = -1;
+            for (Polygon p : ((MultiPolygon) this).polygons()) {
+                Box2d e = p.envelope();
+                double area = e.width() * e.height();
+                if (area > best) {
+                    best = area;
+                    target = p;
+                }
+            }
+        } else {
+            throw new IllegalStateException("an interior point needs a polygon or a multi polygon, not " + kind());
+        }
+        byte[] w = target.toWkb();
+        double[] xy = new double[2];
+        Mapnik.check(NativeApi.INSTANCE.mapnik_geometry_interior_point(w, w.length, 1.0, xy));
+        return new Point2d(xy[0], xy[1]);
+    }
+
+    /** The point of this geometry nearest to (x, y), with its distance. Throws {@link MapnikException} if empty. */
+    public Nearest closestPoint(double x, double y) {
+        byte[] w = toWkb();
+        double[] out = new double[3];
+        Mapnik.check(NativeApi.INSTANCE.mapnik_geometry_closest_point(w, w.length, x, y, out));
+        return new Nearest(new Point2d(out[0], out[1]), out[2]);
+    }
+
+    /**
+     * True if the geometry is valid: rings do not cross themselves, holes lie inside the exterior and
+     * do not overlap each other, and so on. For a ring that crosses itself Mapnik reports the problem
+     * as a wrong orientation, because a crossing ring has no single winding.
+     */
+    public boolean isValid() {
+        byte[] w = toWkb();
+        int r = NativeApi.INSTANCE.mapnik_geometry_is_valid(w, w.length);
+        if (r < 0) {
+            throw new MapnikException(NativeApi.INSTANCE.mapnik_last_error());
+        }
+        return r == 1;
+    }
+
+    /** Why the geometry is invalid, in Mapnik's words, or a sentence saying it is valid. */
+    public String validityReason() {
+        byte[] w = toWkb();
+        String s = NativeApi.INSTANCE.mapnik_geometry_validity_reason(w, w.length);
+        if (s == null) {
+            throw new MapnikException(NativeApi.INSTANCE.mapnik_last_error());
+        }
+        return s;
+    }
+
+    /** True if the geometry has no self-intersections or repeated points that make it complex. */
+    public boolean isSimple() {
+        byte[] w = toWkb();
+        int r = NativeApi.INSTANCE.mapnik_geometry_is_simple(w, w.length);
+        if (r < 0) {
+            throw new MapnikException(NativeApi.INSTANCE.mapnik_last_error());
+        }
+        return r == 1;
+    }
+
+    /**
+     * A copy with polygon rings wound consistently: exteriors counter-clockwise, holes clockwise.
+     * Either winding counts as valid for an ordinary polygon, but a consistent one is what GeoJSON and
+     * many other tools expect. It does not repair a ring that crosses itself.
+     */
+    public Geometry corrected() {
+        byte[] w = toWkb();
+        return fromNativeWkt(NativeApi.INSTANCE.mapnik_geometry_correct(w, w.length));
+    }
+
+    /**
+     * A copy with fewer points, keeping the overall shape. {@code tolerance} is in the geometry's units
+     * and means a different distance for each algorithm. Polygon rings are never collapsed to fewer than
+     * four points, and points and multi points are unchanged.
+     */
+    public Geometry simplify(SimplifyAlgorithm algorithm, double tolerance) {
+        byte[] w = toWkb();
+        return fromNativeWkt(NativeApi.INSTANCE.mapnik_geometry_simplify(w, w.length, algorithm.xmlName(), tolerance));
+    }
+
+    /**
+     * A parallel copy of a line, {@code distance} to its left (positive) or right (negative). For line
+     * strings, multi line strings and collections of them. Throws {@link MapnikException} for points and polygons.
+     */
+    public Geometry offset(double distance) {
+        byte[] w = toWkb();
+        return fromNativeWkt(NativeApi.INSTANCE.mapnik_geometry_offset(w, w.length, distance));
+    }
+
+    /**
+     * A copy with every coordinate moved from the transform's source projection to its destination.
+     * Throws {@link MapnikException} if any point cannot be transformed.
+     */
+    public Geometry reproject(CoordinateTransform transform) {
+        byte[] w = toWkb();
+        return fromNativeWkt(NativeApi.INSTANCE.mapnik_geometry_reproject(w, w.length, transform.ptr()));
+    }
+
+    private static Geometry fromNativeWkt(String wkt) {
+        if (wkt == null) {
+            throw new MapnikException(NativeApi.INSTANCE.mapnik_last_error());
+        }
+        return fromWkt(wkt);
+    }
+
     // ================================================================== factories
 
     public static Point point(double x, double y) {

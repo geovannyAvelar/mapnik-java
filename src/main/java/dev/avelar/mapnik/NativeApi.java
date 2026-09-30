@@ -213,6 +213,18 @@ interface NativeApi extends Library {
     void mapnik_memory_datasource_clear(Pointer datasource);
     void mapnik_memory_datasource_set_envelope(Pointer datasource, double minx, double miny, double maxx, double maxy);
 
+    // geometry operations
+    int mapnik_geometry_centroid(byte[] wkb, int length, double[] outXy);
+    int mapnik_geometry_interior_point(byte[] wkb, int length, double scaleFactor, double[] outXy);
+    int mapnik_geometry_closest_point(byte[] wkb, int length, double x, double y, double[] outXyd);
+    int mapnik_geometry_is_valid(byte[] wkb, int length);
+    String mapnik_geometry_validity_reason(byte[] wkb, int length);
+    int mapnik_geometry_is_simple(byte[] wkb, int length);
+    String mapnik_geometry_correct(byte[] wkb, int length);
+    String mapnik_geometry_simplify(byte[] wkb, int length, String algorithm, double tolerance);
+    String mapnik_geometry_offset(byte[] wkb, int length, double distance);
+    String mapnik_geometry_reproject(byte[] wkb, int length, Pointer transform);
+
     // projections
     Pointer mapnik_projection_create(String params);
     void mapnik_projection_free(Pointer projection);

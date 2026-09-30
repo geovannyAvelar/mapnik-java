@@ -81,7 +81,7 @@ public final class CoordinateTransform implements AutoCloseable {
         return Box2d.of(b);
     }
 
-    private Pointer ptr() {
+    Pointer ptr() {
         if (handle == null) {
             throw new IllegalStateException("transform closed");
         }

@@ -10,6 +10,7 @@
 #include <mapnik/layer.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/params.hpp>
+#include <mapnik/proj_transform.hpp>
 
 #include <exception>
 #include <memory>
@@ -37,6 +38,11 @@ struct mapnik_featureset {
 struct mapnik_feature {
     mapnik::feature_ptr feature;
     std::vector<std::pair<std::string, std::size_t>> attributes;  // name, slot; sorted by name
+};
+
+struct mapnik_transform {
+    mapnik::proj_transform transform;
+    mapnik_transform(mapnik::projection const& a, mapnik::projection const& b) : transform(a, b) {}
 };
 
 namespace mc {

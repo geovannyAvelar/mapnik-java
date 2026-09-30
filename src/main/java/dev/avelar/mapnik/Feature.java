@@ -151,6 +151,11 @@ public final class Feature {
         return v.toString();
     }
 
+    /** A copy of this feature with its geometry reprojected. The id and attributes are unchanged. */
+    public Feature reproject(CoordinateTransform transform) {
+        return create(id, geometry().reproject(transform), attributes);
+    }
+
     // ================================================================== GeoJSON in
 
     /**
