@@ -19,7 +19,7 @@ Java (MapnikMap)  ->  JNA (NativeApi)  ->  libmapnik_c.so (C shim)  ->  Mapnik (
 
 ## Requirements
 
-- Mapnik 4.x with development files (`mapnik-config` on your `PATH`)
+- Mapnik 4.x with development files, found through either `mapnik-config` on your `PATH` (SCons builds, most distro packages) or Mapnik's CMake package (set `CMAKE_PREFIX_PATH` to the install prefix)
 - Mapnik's own development dependencies (on Debian or Ubuntu, for example `libharfbuzz-dev` and `libcairo2-dev`)
 - CMake 3.16 or later and a C++20 compiler
 - JDK 8 or later (the Gradle wrapper is included)
@@ -103,7 +103,7 @@ try (MapnikMap map = new MapnikMap(512, 512)) {
 
 Set the projection before `zoomToBox`, because the extent is interpreted in the map's projection. An invalid projection string fails when you render, not when you set it. Unknown layer names throw `IllegalArgumentException`.
 
-Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system.
+Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system. A CMake-installed Mapnik has no `mapnik-config`: look under its install prefix (`find <prefix> -name csv.input`) and set `MAPNIK_INPUT_PLUGINS`.
 
 ## Examples
 
@@ -119,7 +119,7 @@ Both have their own README.
 ./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
 ```
 
-Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable if set. They cover rendering a GeoJSON polygon and checking pixels, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 

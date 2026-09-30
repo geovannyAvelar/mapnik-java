@@ -308,7 +308,12 @@ public final class WmsServer implements AutoCloseable {
         if (env != null && !env.isEmpty()) {
             return env;
         }
-        Process p = new ProcessBuilder("mapnik-config", "--input-plugins").redirectErrorStream(true).start();
+        Process p;
+        try {
+            p = new ProcessBuilder("mapnik-config", "--input-plugins").redirectErrorStream(true).start();
+        } catch (IOException e) {
+            throw new IOException("set MAPNIK_INPUT_PLUGINS or put mapnik-config on PATH", e);
+        }
         try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
             String line = r.readLine();
             if (line == null || line.trim().isEmpty()) {

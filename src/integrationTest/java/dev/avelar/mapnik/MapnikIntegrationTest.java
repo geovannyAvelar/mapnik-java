@@ -39,7 +39,8 @@ class MapnikIntegrationTest {
     @BeforeAll
     static void setUp() throws IOException {
         String plugins = System.getProperty("mapnik.input.plugins");
-        assertNotNull(plugins, "mapnik.input.plugins system property not set");
+        assertTrue(plugins != null && !plugins.isEmpty(),
+            "Mapnik input plugin directory unknown: put mapnik-config on PATH or set MAPNIK_INPUT_PLUGINS");
         Mapnik.registerDatasources(plugins);
         for (String f : new String[] {"square.xml", "square.geojson", "missing-data.xml", "two-layers.xml", "small.geojson"}) {
             copyResource(f, dir.resolve(f));

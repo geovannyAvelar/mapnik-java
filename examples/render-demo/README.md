@@ -21,7 +21,7 @@ cd examples/render-demo
 
 Arguments: `[output.png] [style.xml] [width] [height]`. Without a style it renders the bundled demo map (two polygons and a line, from GeoJSON). Pass your own Mapnik XML style to render something else.
 
-The input plugin directory comes from `MAPNIK_INPUT_PLUGINS`, or from `mapnik-config --input-plugins`.
+The input plugin directory comes from `MAPNIK_INPUT_PLUGINS`, or from `mapnik-config --input-plugins` if that is on your `PATH`.
 
 ## Test
 

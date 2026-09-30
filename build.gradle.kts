@@ -45,11 +45,19 @@ val integrationTest by sourceSets.creating {
 configurations[integrationTest.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
 configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
 
+// Input plugin directory: MAPNIK_INPUT_PLUGINS, else `mapnik-config --input-plugins`.
+// A CMake-installed Mapnik has no mapnik-config, so set MAPNIK_INPUT_PLUGINS for it.
 val mapnikInputPlugins = providers.environmentVariable("MAPNIK_INPUT_PLUGINS").orElse(
-    providers.exec {
-        commandLine("mapnik-config", "--input-plugins")
-        isIgnoreExitValue = true
-    }.standardOutput.asText.map { it.trim() }
+    providers.provider {
+        try {
+            providers.exec {
+                commandLine("mapnik-config", "--input-plugins")
+                isIgnoreExitValue = true
+            }.standardOutput.asText.get().trim()
+        } catch (e: Exception) {
+            ""
+        }
+    }
 )
 
 tasks.register<Test>("integrationTest") {
