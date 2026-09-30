@@ -68,6 +68,63 @@ check real output, such as pixels and XML.
 - Not done: raster colorizer stops, group symbolizers, and text placement options that need nested
   XML elements. Use an XML style for those.
 
+## Phase 6: gaps in the classes already wrapped
+
+- `Layer`: blend mode (`comp_op`), child layers.
+- `MapnikMap`: background image blend mode, extra parameters, font directory, pixel and map
+  coordinate conversion (`view_transform`).
+- `Mapnik.scaleDenominator(...)`.
+- `Datasource`: layer name, encoding, parameters read back.
+- `Color`: parse a colour string, read its components, format it, and accept it where strings are
+  accepted today.
+
+## Phase 7: runtime and diagnostics
+
+- Compiled-in capabilities (Cairo, PNG, JPEG, WebP, TIFF, PROJ) and readable image formats.
+- Logging: severity, format, per-object severity.
+- Fonts: registered face names, register one font file, list font directories.
+- Plugins: register one plugin file, list plugin directories. Clear the marker cache.
+
+## Phase 8: image operations
+
+- Filters (blur, sharpen, emboss, edge detect, invert, and the rest of Mapnik's list), compositing
+  with Mapnik's blend modes, scaling with the different resampling methods, crop, colour to alpha,
+  opacity, premultiply.
+- `Image.probe`: size and format without decoding.
+
+## Phase 9: rasters
+
+- Single-band images (gray and float) in `Image`.
+- Raster colorizer stops for the raster symbolizer, and `warp` to reproject a raster.
+
+## Phase 10: geometry and feature building
+
+- `Geometry` types built from coordinates in Java, with WKT, WKB and GeoJSON read and write
+  (hand-written, so no dependency on Mapnik's static parser libraries).
+- `Feature` builder and a memory datasource, so data can be rendered straight from Java.
+- Algorithms: centroid, closest point, interior point, validity and simplicity checks, ring
+  orientation fix, simplify, parallel offset. Reproject a geometry or feature.
+
+## Phase 11: expressions
+
+- `Expression`: parse and validate a filter, and evaluate it against a `Feature`. Path expressions.
+- Parse transforms.
+
+## Phase 12: more rendering
+
+- Render a region with a buffer (`request`) and XYZ tile helpers.
+- Render a single layer or a layer subset.
+- UTFGrid output.
+
+## Phase 13: richer styling
+
+- Nested elements in symbolizers: text placements and formats, raster colorizer, group symbolizer.
+- Read a style back as `Style`, `Rule` and `Symbolizer` objects.
+
+## Phase 14: Java-implemented datasource
+
+- A Mapnik datasource that calls back into Java for its features.
+
 ## Later
 
-Logging severity, marker and image caches, extra parameters on maps, and anything users ask for.
+Collision detector queries, transliteration, and anything users ask for.
