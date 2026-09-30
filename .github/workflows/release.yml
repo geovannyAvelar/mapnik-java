@@ -6,8 +6,15 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
+  # Publishing waits for the real-Mapnik tests: build Mapnik, run unit,
+  # integration and example tests.
+  integration:
+    name: Integration tests
+    uses: ./.github/workflows/integration.yml
+
   publish:
     name: Build, Sign & Publish
+    needs: integration
     runs-on: ubuntu-latest
 
     permissions:
