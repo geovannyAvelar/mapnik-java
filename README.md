@@ -174,13 +174,37 @@ try (Projection p = Projection.of("epsg:32633")) {
 
 A point that cannot be projected throws `MapnikException`. Use a `CoordinateTransform` to turn a longitude/latitude box into the extent for `zoomToBox` when the map is in another projection.
 
+### Rendering
+
+```java
+byte[] png    = map.renderToBytes("png");
+byte[] small  = map.renderToBytes("png8");              // indexed colour, much smaller
+byte[] jpeg   = map.renderToBytes("jpeg90");
+map.renderToFile(Paths.get("map.pdf"), "pdf");          // also svg and ps, through Cairo
+
+RenderOptions hiDpi = RenderOptions.defaults().scaleFactor(2);  // thicker lines, bigger symbols and text
+byte[] retina = map.renderToBytes("png", hiDpi);
+
+try (Image img = map.renderToImage()) {                 // work with the pixels
+    int argb = img.getArgb(10, 20);                     // 0xAARRGGBB
+    byte[] again = img.toBytes("webp");
+}
+
+try (Image canvas = Image.create(map.width(), map.height())) {
+    canvas.fill("white");
+    map.render(canvas);                                  // blends over what is there
+}
+```
+
+`RenderOptions.offset(x, y)` makes the image a window that starts at pixel (x, y) of a larger map image, which is how you render a big map in pieces. `Mapnik.hasCairo()` tells you whether PDF, SVG and PostScript output is available.
+
 Styles are still defined in XML. Creating styles, rules and symbolizers in code is planned (see [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system. A CMake-installed Mapnik has no `mapnik-config`: look under its install prefix (`find <prefix> -name csv.input`) and set `MAPNIK_INPUT_PLUGINS`.
 
 ## Status
 
-The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries and projections work today. More rendering options and styling in code are planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
+The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections and rendering work today. Styling in code is planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 
@@ -196,7 +220,7 @@ Both have their own README.
 ./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
 ```
 
-Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, projections, image formats and Cairo, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 

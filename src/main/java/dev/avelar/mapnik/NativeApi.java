@@ -163,8 +163,27 @@ interface NativeApi extends Library {
     int mapnik_transform_forward_box(Pointer transform, double[] box, int densifyPoints);
     int mapnik_transform_backward_box(Pointer transform, double[] box, int densifyPoints);
 
+    // images
+    Pointer mapnik_image_create(int width, int height);
+    Pointer mapnik_image_load_file(String path);
+    Pointer mapnik_image_load_bytes(byte[] data, int length);
+    void mapnik_image_free(Pointer image);
+    int mapnik_image_width(Pointer image);
+    int mapnik_image_height(Pointer image);
+    int mapnik_image_get_pixel(Pointer image, int x, int y);
+    int mapnik_image_set_pixel(Pointer image, int x, int y, int rgba);
+    int mapnik_image_fill(Pointer image, String color);
+    int mapnik_image_is_solid(Pointer image);
+    void mapnik_image_copy_rgba(Pointer image, byte[] out);
+    int mapnik_image_save(Pointer image, String path, String format);
+    int mapnik_image_save_to_buffer(Pointer image, String format, PointerByReference out, IntByReference len);
+
     // render
-    int mapnik_map_render_to_file(Pointer map, String path, String format);
-    int mapnik_map_render_to_buffer(Pointer map, String format, PointerByReference out, IntByReference len);
+    int mapnik_map_render_to_file(Pointer map, String path, String format, double scaleFactor, int offsetX, int offsetY);
+    int mapnik_map_render_to_buffer(Pointer map, String format, PointerByReference out, IntByReference len,
+                                    double scaleFactor, int offsetX, int offsetY);
+    int mapnik_map_render_to_image(Pointer map, Pointer image, double scaleFactor, int offsetX, int offsetY);
+    int mapnik_map_render_to_cairo_file(Pointer map, String path, String type, double scaleFactor);
+    int mapnik_cairo_available();
     void mapnik_buffer_free(Pointer buf);
 }

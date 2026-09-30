@@ -96,14 +96,15 @@ class NativeApiConsistencyTest {
         }
         switch (c) {
             case "void": return j == void.class;
-            case "int": return j == int.class;
+            case "int":
+            case "unsigned int": return j == int.class;  // same width; the sign is ours to interpret
             case "double": return j == double.class;
             case "long long": return j == long.class;
             case "char*": return j == String.class;
             case "char**": return j == String[].class;
             case "double*": return j == double[].class;
             case "int*": return j == int[].class || j == IntByReference.class;
-            case "unsigned char*": return j == Pointer.class;
+            case "unsigned char*": return j == Pointer.class || j == byte[].class;
             case "unsigned char**": return j == PointerByReference.class;
             default: return false;
         }

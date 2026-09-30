@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="epsg:4326" background-color="white">
+  <Style name="outline">
+    <Rule><LineSymbolizer stroke="black" stroke-width="2"/></Rule>
+  </Style>
+  <Layer name="square" srs="epsg:4326">
+    <StyleName>outline</StyleName>
+    <Datasource>
+      <Parameter name="type">geojson</Parameter>
+      <Parameter name="file">square.geojson</Parameter>
+    </Datasource>
+  </Layer>
+</Map>

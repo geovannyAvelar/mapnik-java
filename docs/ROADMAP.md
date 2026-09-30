@@ -40,11 +40,16 @@ check real output, such as pixels and XML.
   libraries tied to the ICU version Mapnik was built with, so they are not safe to link into the
   shim. Geometry output (WKT and GeoJSON) is done, in phase 2.
 
-## Phase 4: rendering
+## Phase 4: rendering (done)
 
-- Render options: scale factor, offset, image format options such as `png8` and `jpeg90`.
-- `Image`: create, load, save, size, pixel access, compose.
-- Cairo output (PDF, SVG, PostScript) and UTFGrid.
+- `RenderOptions`: scale factor (line widths, symbols and text) and offset (the image as a window
+  onto a larger map, for tiling).
+- Formats: `png`, `png8`, `png256`, `jpeg`, `jpeg90`, `webp`, `tiff`, `png:z=9` and the other format
+  strings Mapnik understands, plus `pdf`, `svg` and `ps` through Cairo.
+- `Image`: create, load from a file or bytes, fill, pixels as ARGB, encode, save. Straight alpha.
+- `MapnikMap.renderToImage()` and `render(Image)`, which blends over what is already in the image.
+- `Mapnik.hasCairo()`.
+- Not done: UTFGrid output, which needs a grid renderer and its own encoder. Ask if you need it.
 
 ## Phase 5: styling in code
 

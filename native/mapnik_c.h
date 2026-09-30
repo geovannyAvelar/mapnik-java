@@ -27,6 +27,7 @@ typedef struct mapnik_featureset mapnik_featureset_t;
 typedef struct mapnik_feature mapnik_feature_t;
 typedef struct mapnik_projection mapnik_projection_t;
 typedef struct mapnik_transform mapnik_transform_t;
+typedef struct mapnik_image mapnik_image_t;
 
 /* ---- runtime ------------------------------------------------------------------------------ */
 
@@ -251,11 +252,45 @@ int                 mapnik_transform_backward_point(mapnik_transform_t* t, doubl
 int                 mapnik_transform_forward_box(mapnik_transform_t* t, double* box, int densify_points);
 int                 mapnik_transform_backward_box(mapnik_transform_t* t, double* box, int densify_points);
 
+/* ---- images ------------------------------------------------------------------------------- */
+
+/* An RGBA image. Pixels are straight (not premultiplied) 32-bit values: red in the low byte, then
+ * green, blue, alpha in the high byte. NULL on error for the constructors. */
+mapnik_image_t* mapnik_image_create(int width, int height);
+mapnik_image_t* mapnik_image_load_file(const char* path);
+mapnik_image_t* mapnik_image_load_bytes(const unsigned char* data, int length);
+void            mapnik_image_free(mapnik_image_t* img);
+
+int          mapnik_image_width(mapnik_image_t* img);
+int          mapnik_image_height(mapnik_image_t* img);
+/* Bad coordinates: get returns 0, set returns -1. */
+unsigned int mapnik_image_get_pixel(mapnik_image_t* img, int x, int y);
+int          mapnik_image_set_pixel(mapnik_image_t* img, int x, int y, unsigned int rgba);
+int          mapnik_image_fill(mapnik_image_t* img, const char* color);
+int          mapnik_image_is_solid(mapnik_image_t* img);
+/* Copies width*height*4 bytes (r, g, b, a per pixel, row by row) into out. */
+void         mapnik_image_copy_rgba(mapnik_image_t* img, unsigned char* out);
+
+int  mapnik_image_save(mapnik_image_t* img, const char* path, const char* format);
+/* Allocates *out. Free with mapnik_buffer_free(). */
+int  mapnik_image_save_to_buffer(mapnik_image_t* img, const char* format, unsigned char** out, int* len);
+
 /* ---- render ------------------------------------------------------------------------------- */
 
-int  mapnik_map_render_to_file(mapnik_map_t* m, const char* path, const char* format);
+/* scale_factor scales line widths, symbols and text (1.0 is normal; 2.0 suits a high-dpi image).
+ * offset_x and offset_y make the image a window starting at that pixel of a larger map image: the
+ * drawing moves left by offset_x and up by offset_y. */
+int  mapnik_map_render_to_file(mapnik_map_t* m, const char* path, const char* format,
+                               double scale_factor, int offset_x, int offset_y);
 /* Allocates *out. Free with mapnik_buffer_free(). */
-int  mapnik_map_render_to_buffer(mapnik_map_t* m, const char* format, unsigned char** out, int* len);
+int  mapnik_map_render_to_buffer(mapnik_map_t* m, const char* format, unsigned char** out, int* len,
+                                 double scale_factor, int offset_x, int offset_y);
+/* Draws onto an existing image, which must be the same size as the map. */
+int  mapnik_map_render_to_image(mapnik_map_t* m, mapnik_image_t* img,
+                                double scale_factor, int offset_x, int offset_y);
+/* Vector output through Cairo. type is "pdf", "svg" or "ps". Fails if Mapnik has no Cairo support. */
+int  mapnik_map_render_to_cairo_file(mapnik_map_t* m, const char* path, const char* type, double scale_factor);
+int  mapnik_cairo_available(void);
 void mapnik_buffer_free(unsigned char* buf);
 
 #ifdef __cplusplus

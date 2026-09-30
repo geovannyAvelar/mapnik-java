@@ -24,7 +24,8 @@ final class Fixtures {
             dir = Files.createTempDirectory("mapnik-java-it");
             for (String f : new String[] {"square.xml", "square.geojson", "small.geojson", "two-layers.xml",
                                           "missing-data.xml", "places.geojson", "poly-hole.geojson", "line.geojson",
-                                          "multi-point.geojson", "multi-line.geojson", "multi-polygon.geojson"}) {
+                                          "multi-point.geojson", "multi-line.geojson", "multi-polygon.geojson",
+                                          "outline.xml", "transparent-square.xml", "half-red.xml"}) {
                 try (InputStream in = Fixtures.class.getResourceAsStream("/" + f)) {
                     assertNotNull(in, "missing test resource " + f);
                     Files.copy(in, dir.resolve(f), StandardCopyOption.REPLACE_EXISTING);

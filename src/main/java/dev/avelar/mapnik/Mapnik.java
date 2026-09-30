@@ -31,6 +31,11 @@ public final class Mapnik {
             : java.util.Collections.unmodifiableList(java.util.Arrays.asList(names.split("\n")));
     }
 
+    /** True if Mapnik was built with Cairo, which PDF, SVG and PostScript output needs. */
+    public static boolean hasCairo() {
+        return NativeApi.INSTANCE.mapnik_cairo_available() == 1;
+    }
+
     /** Version of Mapnik this wrapper release was built and tested against. */
     public static String expectedVersion() {
         return EXPECTED;

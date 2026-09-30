@@ -4,12 +4,16 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -363,14 +367,49 @@ public final class MapnikMap implements AutoCloseable {
 
     // ------------------------------------------------------------------ render
 
+    /**
+     * Render to a file. {@code format} is an image format ({@code png}, {@code jpeg}, {@code webp},
+     * {@code tiff}, with options such as {@code png8}, {@code png256}, {@code jpeg90}) or a vector
+     * format ({@code pdf}, {@code svg}, {@code ps}, which need Cairo support in Mapnik).
+     */
     public void renderToFile(Path out, String format) {
-        Mapnik.check(N.mapnik_map_render_to_file(ptr(), out.toString(), format));
+        renderToFile(out, format, RenderOptions.defaults());
     }
 
+    public void renderToFile(Path out, String format, RenderOptions options) {
+        if (isVector(format)) {
+            Mapnik.check(N.mapnik_map_render_to_cairo_file(ptr(), out.toString(), format.toLowerCase(Locale.ROOT),
+                options.scaleFactor()));
+        } else {
+            Mapnik.check(N.mapnik_map_render_to_file(ptr(), out.toString(), format, options.scaleFactor(),
+                options.offsetX(), options.offsetY()));
+        }
+    }
+
+    /** Render to memory. Accepts the same formats as {@link #renderToFile}. */
     public byte[] renderToBytes(String format) {
+        return renderToBytes(format, RenderOptions.defaults());
+    }
+
+    public byte[] renderToBytes(String format, RenderOptions options) {
+        if (isVector(format)) {
+            // Cairo can only write to a file.
+            try {
+                Path tmp = Files.createTempFile("mapnik-java", "." + format.toLowerCase(Locale.ROOT));
+                try {
+                    renderToFile(tmp, format, options);
+                    return Files.readAllBytes(tmp);
+                } finally {
+                    Files.deleteIfExists(tmp);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         PointerByReference out = new PointerByReference();
         IntByReference len = new IntByReference();
-        Mapnik.check(N.mapnik_map_render_to_buffer(ptr(), format, out, len));
+        Mapnik.check(N.mapnik_map_render_to_buffer(ptr(), format, out, len, options.scaleFactor(),
+            options.offsetX(), options.offsetY()));
         Pointer buf = out.getValue();
         try {
             return buf.getByteArray(0, len.getValue());
@@ -381,6 +420,38 @@ public final class MapnikMap implements AutoCloseable {
 
     public byte[] renderToPng() {
         return renderToBytes("png");
+    }
+
+    /** Render to a new {@link Image} the size of the map. Close it when done. */
+    public Image renderToImage() {
+        return renderToImage(RenderOptions.defaults());
+    }
+
+    public Image renderToImage(RenderOptions options) {
+        Image image = Image.create(width(), height());
+        try {
+            render(image, options);
+            return image;
+        } catch (RuntimeException e) {
+            image.close();
+            throw e;
+        }
+    }
+
+    /** Draw onto an existing image, blending over what is there. The image must be the same size as the map. */
+    public MapnikMap render(Image image) {
+        return render(image, RenderOptions.defaults());
+    }
+
+    public MapnikMap render(Image image, RenderOptions options) {
+        Mapnik.check(N.mapnik_map_render_to_image(ptr(), image.ptr(), options.scaleFactor(),
+            options.offsetX(), options.offsetY()));
+        return this;
+    }
+
+    private static boolean isVector(String format) {
+        String f = format.toLowerCase(Locale.ROOT);
+        return f.equals("pdf") || f.equals("svg") || f.equals("ps");
     }
 
     // ------------------------------------------------------------------ plumbing
