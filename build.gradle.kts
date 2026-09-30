@@ -1,3 +1,5 @@
+import org.gradle.api.publish.maven.MavenPom
+
 plugins {
     id("java-library")
     id("maven-publish")
@@ -35,6 +37,55 @@ dependencies {
 // shared library is not found.
 val nativeDir = layout.buildDirectory.dir("native")
 
+// ============================================================================
+// Prebuilt native libraries
+// ============================================================================
+// natives/linux-x86_64/Dockerfile builds Mapnik, the shim and everything they need into
+// build/natives/linux-x86_64. This packages that directory as a jar, which the loader unpacks at run time.
+
+val nativesDirectory = layout.buildDirectory.dir("natives/linux-x86_64")
+val hasNatives = nativesDirectory.get().asFile.resolve("MANIFEST").exists()
+val useBundledNatives = providers.gradleProperty("bundledNatives").isPresent
+val nativesArtifactId = "mapnik-java-natives-linux-x86_64"
+
+val nativesJar = tasks.register<Jar>("nativesJar") {
+    description = "Packages the prebuilt Linux x86_64 native libraries."
+    group = "build"
+    archiveBaseName.set(nativesArtifactId)
+    from(nativesDirectory) { into("dev/avelar/mapnik/natives/linux-x86_64") }
+    onlyIf { hasNatives }
+}
+
+// Maven Central wants a sources and a javadoc jar for every artifact. These hold a note instead.
+val nativesNote = layout.buildDirectory.file("natives-note/README.txt")
+val writeNativesNote = tasks.register("writeNativesNote") {
+    outputs.file(nativesNote)
+    doLast {
+        nativesNote.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText("Prebuilt native libraries for mapnik-java on Linux x86_64: Mapnik, its dependencies, input plugins,\n" +
+                "fonts and PROJ data. There is no Java source here. See https://github.com/geovannyAvelar/mapnik-java\n" +
+                "and the NOTICE and licenses/ entries inside the main jar for what is bundled and under which licenses.\n")
+        }
+    }
+}
+val nativesSourcesJar = tasks.register<Jar>("nativesSourcesJar") {
+    archiveBaseName.set(nativesArtifactId)
+    archiveClassifier.set("sources")
+    from(writeNativesNote)
+    onlyIf { hasNatives }
+}
+val nativesJavadocJar = tasks.register<Jar>("nativesJavadocJar") {
+    archiveBaseName.set(nativesArtifactId)
+    archiveClassifier.set("javadoc")
+    from(writeNativesNote)
+    onlyIf { hasNatives }
+}
+
+if (useBundledNatives && !hasNatives) {
+    throw GradleException("-PbundledNatives needs the native bundle: run scripts/build-natives-linux.sh first")
+}
+
 // Integration tests run against a real Mapnik install and fail if it is missing.
 // Run: ./gradlew integrationTest   (build the shim first)
 val integrationTest by sourceSets.creating {
@@ -44,6 +95,13 @@ val integrationTest by sourceSets.creating {
 
 configurations[integrationTest.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
 configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
+
+// With -PbundledNatives the tests load Mapnik from the natives jar instead of the system.
+dependencies {
+    if (useBundledNatives) {
+        add(integrationTest.runtimeOnlyConfigurationName, files(nativesJar.map { it.archiveFile }))
+    }
+}
 
 // Input plugin directory: MAPNIK_INPUT_PLUGINS, else `mapnik-config --input-plugins`.
 // A CMake-installed Mapnik has no mapnik-config, so set MAPNIK_INPUT_PLUGINS for it.
@@ -80,9 +138,15 @@ tasks.register<Test>("integrationTest") {
     testClassesDirs = integrationTest.output.classesDirs
     classpath = integrationTest.runtimeClasspath
     useJUnitPlatform()
-    systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
-    systemProperty("mapnik.input.plugins", mapnikInputPlugins.get())
-    systemProperty("mapnik.fonts", mapnikFonts.get())
+    if (useBundledNatives) {
+        // No system Mapnik and no shim on the path: everything must come from the natives jar.
+        systemProperty("mapnik.input.plugins", "")
+        systemProperty("mapnik.fonts", "")
+    } else {
+        systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
+        systemProperty("mapnik.input.plugins", mapnikInputPlugins.get())
+        systemProperty("mapnik.fonts", mapnikFonts.get())
+    }
     testLogging {
         events("passed", "failed", "skipped")
         showStandardStreams = true
@@ -127,44 +191,68 @@ val developerId = providers.gradleProperty("developer.id").orNull
 val developerName = providers.gradleProperty("developer.name").orNull
 val developerEmail = providers.gradleProperty("developer.email").orNull
 
+fun MavenPom.fillPom(pomName: String, pomDescription: String, bundlesLgpl: Boolean = false) {
+    name.set(pomName)
+    description.set(pomDescription)
+    url.set(projectUrl ?: "https://github.com/geovannyAvelar/mapnik-java")
+    inceptionYear.set("2026")
+
+    licenses {
+        license {
+            name.set("MIT License")
+            url.set("https://opensource.org/licenses/MIT")
+            distribution.set("repo")
+        }
+        if (bundlesLgpl) {
+            license {
+                name.set("GNU Lesser General Public License, version 2.1 (Mapnik and some bundled libraries)")
+                url.set("https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html")
+                distribution.set("repo")
+            }
+        }
+    }
+
+    developers {
+        developer {
+            id.set(developerId ?: "avelar")
+            name.set(developerName ?: "Giovani Avelar")
+            email.set(developerEmail ?: "github@avelar.dev")
+        }
+    }
+
+    scm {
+        val scmUrl = projectUrl ?: "https://github.com/geovannyAvelar/mapnik-java"
+        connection.set("scm:git:${scmUrl}.git")
+        developerConnection.set("scm:git:${scmUrl}.git")
+        url.set(scmUrl)
+    }
+
+    issueManagement {
+        system.set("GitHub Issues")
+        url.set("https://github.com/geovannyAvelar/mapnik-java/issues")
+    }
+}
+
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-
             pom {
-                name.set(projectName ?: "mapnik-java")
-                description.set(projectDescription ?: "Java bindings for Mapnik via a C shim and JNA")
-                url.set(projectUrl ?: "https://github.com/geovannyAvelar/mapnik-java")
+                fillPom(projectName ?: "mapnik-java", projectDescription ?: "Java bindings for Mapnik via a C shim and JNA")
+            }
+        }
 
-                inceptionYear.set("2026")
-
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                        distribution.set("repo")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set(developerId ?: "avelar")
-                        name.set(developerName ?: "Giovani Avelar")
-                        email.set(developerEmail ?: "github@avelar.dev")
-                    }
-                }
-
-                scm {
-                    val scmUrl = projectUrl ?: "https://github.com/geovannyAvelar/mapnik-java"
-                    connection.set("scm:git:${scmUrl}.git")
-                    developerConnection.set("scm:git:${scmUrl}.git")
-                    url.set(scmUrl)
-                }
-
-                issueManagement {
-                    system.set("GitHub Issues")
-                    url.set("https://github.com/geovannyAvelar/mapnik-java/issues")
+        if (hasNatives) {
+            create<MavenPublication>("natives") {
+                artifactId = nativesArtifactId
+                artifact(nativesJar)
+                artifact(nativesSourcesJar)
+                artifact(nativesJavadocJar)
+                pom {
+                    fillPom("mapnik-java natives (Linux x86_64)",
+                        "Prebuilt Mapnik and mapnik-java native libraries for Linux x86_64, with their dependencies, " +
+                            "input plugins, fonts and PROJ data. Add it next to mapnik-java to need nothing installed.",
+                        bundlesLgpl = true)
                 }
             }
         }
@@ -194,6 +282,9 @@ signing {
     if (gpgKey != null && gpgPassphrase != null) {
         useInMemoryPgpKeys(gpgKey, gpgPassphrase)
         sign(publishing.publications["mavenJava"])
+        if (hasNatives) {
+            sign(publishing.publications["natives"])
+        }
     }
 }
 
@@ -207,5 +298,12 @@ nmcp {
         username = System.getenv("SONATYPE_USERNAME") ?: ""
         password = System.getenv("SONATYPE_PASSWORD") ?: ""
         publicationType = "AUTOMATIC"
+    }
+    if (hasNatives) {
+        publish("natives") {
+            username = System.getenv("SONATYPE_USERNAME") ?: ""
+            password = System.getenv("SONATYPE_PASSWORD") ?: ""
+            publicationType = "AUTOMATIC"
+        }
     }
 }

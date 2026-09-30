@@ -44,6 +44,7 @@ class DiagnosticsIntegrationTest {
     }
 
     private static String logWhileLoadingNoisyStyle(Path logFile) throws IOException {
+        assumeTrue(Mapnik.supports(Capability.LOGGING), "this Mapnik was built without logging (USE_LOG)");
         Logging.toFile(logFile);
         try (MapnikMap map = new MapnikMap(10, 10)) {
             map.loadString(NOISY_STYLE, null);
@@ -222,16 +223,21 @@ class DiagnosticsIntegrationTest {
         assertFalse(Mapnik.isDatasourceRegistered("no-such-plugin"));
     }
 
+    private static Path pluginDirectory() {
+        String plugins = System.getProperty("mapnik.input.plugins");
+        return plugins != null && !plugins.isEmpty() ? Paths.get(plugins) : Mapnik.bundledDirectory().resolve("plugins").resolve("input");
+    }
+
     @Test
     void pluginDirectoriesAreReported() {
-        String plugins = System.getProperty("mapnik.input.plugins");
+        String plugins = pluginDirectory().toString();
         assertTrue(Mapnik.datasourcePluginDirectories().contains(plugins),
             Mapnik.datasourcePluginDirectories() + " should contain " + plugins);
     }
 
     @Test
     void onePluginFileCanBeRegistered() throws IOException {
-        Path dir = Paths.get(System.getProperty("mapnik.input.plugins"));
+        Path dir = pluginDirectory();
         Path csv;
         try (Stream<Path> files = Files.list(dir)) {
             csv = files.filter(p -> p.getFileName().toString().startsWith("csv")).findFirst().get();

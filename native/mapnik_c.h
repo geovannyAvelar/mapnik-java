@@ -39,6 +39,9 @@ const char* mapnik_last_error(void);
 const char* mapnik_version(void);
 int         mapnik_version_number(void);
 
+/* Point PROJ at its data directory (proj.db and friends), for a bundled copy. Call before anything
+ * creates a projection. */
+int         mapnik_set_environment(const char* proj_data_dir);
 int         mapnik_register_datasources(const char* dir);
 int         mapnik_register_fonts(const char* dir);
 /* Registered input plugin names, newline separated. */
@@ -55,7 +58,7 @@ const char* mapnik_color_to_string(int r, int g, int b, int a);
 const char* mapnik_color_to_hex(int r, int g, int b, int a);
 
 /* What this Mapnik was built with, as newline separated names: cairo, jpeg, png, tiff, webp, proj,
- * grid, threadsafe. */
+ * grid, threadsafe, logging. */
 const char* mapnik_capabilities(void);
 
 /* Logging. Severity: 0 debug, 1 warn, 2 error, 3 none. */

@@ -17,5 +17,7 @@ public enum Capability {
     /** The grid renderer, for UTFGrid output. */
     GRID,
     /** Safe for several threads to render at once, each with its own map. */
-    THREADSAFE
+    THREADSAFE,
+    /** Mapnik writes messages to its log. Without it, {@link Logging} settings have nothing to show. */
+    LOGGING
 }

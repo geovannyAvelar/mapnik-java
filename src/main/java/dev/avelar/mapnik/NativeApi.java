@@ -1,22 +1,19 @@
 package dev.avelar.mapnik;
 
 import com.sun.jna.Library;
-import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 
-import java.util.Collections;
-
 /** Raw JNA mapping of native/mapnik_c.h. Use the classes in this package instead. */
 interface NativeApi extends Library {
-    NativeApi INSTANCE = Native.load("mapnik_c", NativeApi.class,
-        Collections.singletonMap(Library.OPTION_STRING_ENCODING, "UTF-8"));
+    NativeApi INSTANCE = NativeLoader.load();
 
     // runtime
     String mapnik_last_error();
     String mapnik_version();
     int mapnik_version_number();
+    int mapnik_set_environment(String projDataDir);
     int mapnik_register_datasources(String dir);
     int mapnik_register_fonts(String dir);
     String mapnik_datasource_plugin_names();

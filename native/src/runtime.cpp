@@ -1,5 +1,7 @@
 #include "common.hpp"
 
+#include <cstdlib>
+
 #include <mapnik/color.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/font_engine_freetype.hpp>
@@ -40,6 +42,15 @@ static mapnik::color make_color(int r, int g, int b, int a) {
 
 const char* mapnik_color_to_string(int r, int g, int b, int a) { return text(make_color(r, g, b, a).to_string()); }
 const char* mapnik_color_to_hex(int r, int g, int b, int a) { return text(make_color(r, g, b, a).to_hex_string()); }
+
+int mapnik_set_environment(const char* proj_data_dir) {
+    // PROJ_DATA is read by PROJ 9.1 and later, PROJ_LIB by older versions.
+    if (setenv("PROJ_DATA", proj_data_dir, 1) != 0 || setenv("PROJ_LIB", proj_data_dir, 1) != 0) {
+        g_error = "could not set the PROJ data directory";
+        return -1;
+    }
+    return 0;
+}
 
 int mapnik_register_datasources(const char* dir) {
     return guarded([&] { mapnik::datasource_cache::instance().register_datasources(dir); });

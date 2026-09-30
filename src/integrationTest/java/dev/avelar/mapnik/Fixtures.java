@@ -22,7 +22,8 @@ final class Fixtures {
     static synchronized boolean fonts() {
         String fonts = System.getProperty("mapnik.fonts");
         if (fonts == null || fonts.isEmpty() || !Files.isDirectory(Paths.get(fonts))) {
-            return false;
+            // A natives bundle registers its own fonts when it loads.
+            return Mapnik.fontFaces().contains("DejaVu Sans Book");
         }
         if (!fontsRegistered) {
             Mapnik.registerFonts(fonts);
@@ -34,9 +35,12 @@ final class Fixtures {
     static synchronized Path dir() throws IOException {
         if (dir == null) {
             String plugins = System.getProperty("mapnik.input.plugins");
-            assertTrue(plugins != null && !plugins.isEmpty(),
-                "Mapnik input plugin directory unknown: put mapnik-config on PATH or set MAPNIK_INPUT_PLUGINS");
-            Mapnik.registerDatasources(plugins);
+            if (plugins != null && !plugins.isEmpty()) {
+                Mapnik.registerDatasources(plugins);
+            }
+            // A natives bundle registers its own plugins when it loads.
+            assertTrue(Mapnik.isDatasourceRegistered("geojson"),
+                "no input plugins: put mapnik-config on PATH, set MAPNIK_INPUT_PLUGINS, or use the bundled natives");
             dir = Files.createTempDirectory("mapnik-java-it");
             for (String f : new String[] {"square.xml", "square.geojson", "small.geojson", "two-layers.xml",
                                           "missing-data.xml", "places.geojson", "poly-hole.geojson", "line.geojson",

@@ -43,6 +43,9 @@ const char* mapnik_capabilities(void) {
 #if defined(MAPNIK_THREADSAFE)
     add("threadsafe");
 #endif
+#if defined(MAPNIK_LOG)
+    add("logging");
+#endif
     return text(out);
 }
 

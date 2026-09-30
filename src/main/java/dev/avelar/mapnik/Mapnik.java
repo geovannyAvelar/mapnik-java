@@ -39,6 +39,19 @@ public final class Mapnik {
         return NativeApi.INSTANCE.mapnik_scale_denominator(mapUnitsPerPixel, geographic ? 1 : 0);
     }
 
+    /**
+     * True if the native libraries came from a {@code mapnik-java-natives-*} bundle on the class path,
+     * so this Mapnik, its dependencies, input plugins, fonts and PROJ data all ship with the program.
+     */
+    public static boolean isBundled() {
+        return NativeLoader.bundleDirectory() != null;
+    }
+
+    /** The directory the bundle was unpacked to, or null if the natives are not bundled. */
+    public static java.nio.file.Path bundledDirectory() {
+        return NativeLoader.bundleDirectory();
+    }
+
     /** True if Mapnik was built with Cairo, which PDF, SVG and PostScript output needs. */
     public static boolean hasCairo() {
         return NativeApi.INSTANCE.mapnik_cairo_available() == 1;

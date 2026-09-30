@@ -1,0 +1,7 @@
+.git
+.gradle
+*/.gradle
+build/*
+!build/natives
+examples/*/build
+examples/*/.gradle
