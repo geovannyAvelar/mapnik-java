@@ -187,7 +187,7 @@ Geometries are immutable and 2D. A memory datasource reports its geometry type a
 ```java
 try (Expression e = Expression.parse("[population] > 1000 and [kind] = 'city'")) {
     e.matches(feature);                       // filter features in Java the way Mapnik will
-    e.evaluate(feature, Map.of("zoom", 5));   // values for @zoom
+    e.evaluate(feature, Collections.singletonMap("zoom", 5));   // values for @zoom
 }
 Expression.isValid("[broken");                // false: check a filter before using it in a style
 PathExpression.parse("icons/[type].png").evaluate(feature);
@@ -223,7 +223,7 @@ t.bounds();  t.lonLatBounds();  t.quadKey();  t.parent();  t.children();
 Tiles.covering(new Box2d(-1, 50, 1, 52), 8);
 
 byte[] png = map.renderTileToBytes(t, "png", 32);      // 32 px metatile margin so labels line up
-UtfGrid grid = map.renderGrid("places", "__id__", List.of("name", "pop"), 4);
+UtfGrid grid = map.renderGrid("places", "__id__", Arrays.asList("name", "pop"), 4);
 grid.attributesAt(120, 80);                            // what is under this pixel
 ```
 
