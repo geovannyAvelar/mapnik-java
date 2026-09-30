@@ -492,6 +492,13 @@ int  mapnik_map_render_to_image(mapnik_map_t* m, mapnik_image_t* img,
 /* Vector output through Cairo. type is "pdf", "svg" or "ps". Fails if Mapnik has no Cairo support. */
 int  mapnik_map_render_to_cairo_file(mapnik_map_t* m, const char* path, const char* type, double scale_factor);
 int  mapnik_cairo_available(void);
+/* UTFGrid: an interactive-map companion to an image that says which feature is under each cell. Renders
+ * one layer and returns the grid as JSON ({"grid":[...],"keys":[...],"data":{...}}), or NULL on error
+ * (including a Mapnik without the grid renderer). key is "__id__" or an attribute whose value names each
+ * feature; fields are the attributes to put in "data". resolution is pixels per cell (4 is usual). */
+const char* mapnik_map_render_grid(mapnik_map_t* m, int layer_index, const char* key,
+                                   const char* const* fields, int field_count, int resolution,
+                                   double scale_factor, int offset_x, int offset_y);
 void mapnik_buffer_free(unsigned char* buf);
 
 #ifdef __cplusplus

@@ -299,5 +299,7 @@ interface NativeApi extends Library {
     int mapnik_map_render_to_image(Pointer map, Pointer image, double scaleFactor, int offsetX, int offsetY);
     int mapnik_map_render_to_cairo_file(Pointer map, String path, String type, double scaleFactor);
     int mapnik_cairo_available();
+    String mapnik_map_render_grid(Pointer map, int layerIndex, String key, String[] fields, int fieldCount,
+                                  int resolution, double scaleFactor, int offsetX, int offsetY);
     void mapnik_buffer_free(Pointer buf);
 }

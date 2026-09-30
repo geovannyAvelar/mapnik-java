@@ -694,6 +694,38 @@ public final class MapnikMap implements AutoCloseable {
         }
     }
 
+    /**
+     * Render one layer as a UTFGrid: for each small cell of the picture, which feature is there. A web
+     * map shows it beside the image to highlight a feature or pop up its details when the pointer is
+     * over it, without asking the server again.
+     *
+     * @param layer the layer to draw
+     * @param key {@code "__id__"} to name features by their id, or the attribute whose value names them
+     * @param fields attributes to include in the data for each feature
+     * @param resolution pixels per cell; 4 is usual, 1 gives one cell per pixel
+     */
+    public UtfGrid renderGrid(String layer, String key, Collection<String> fields, int resolution) {
+        return renderGrid(layer, key, fields, resolution, RenderOptions.defaults());
+    }
+
+    public UtfGrid renderGrid(String layer, String key, Collection<String> fields, int resolution, RenderOptions options) {
+        if (resolution < 1) {
+            throw new IllegalArgumentException("resolution must be at least 1: " + resolution);
+        }
+        String[] names = fields.toArray(new String[0]);
+        String json = N.mapnik_map_render_grid(ptr(), indexOf(layer), key, names.length == 0 ? null : names, names.length,
+            resolution, options.scaleFactor(), options.offsetX(), options.offsetY());
+        if (json == null) {
+            throw new MapnikException(N.mapnik_last_error());
+        }
+        return UtfGrid.parse(json, resolution, width(), height());
+    }
+
+    /** A UTFGrid of the layer with features named by their id, including no attributes, at 4 pixels per cell. */
+    public UtfGrid renderGrid(String layer) {
+        return renderGrid(layer, "__id__", Collections.<String>emptyList(), 4);
+    }
+
     private static boolean isVector(String format) {
         String f = format.toLowerCase(Locale.ROOT);
         return f.equals("pdf") || f.equals("svg") || f.equals("ps");
