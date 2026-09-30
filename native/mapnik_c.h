@@ -40,6 +40,16 @@ int         mapnik_register_fonts(const char* dir);
 /* Registered input plugin names, newline separated. */
 const char* mapnik_datasource_plugin_names(void);
 
+double      mapnik_scale_denominator(double map_units_per_pixel, int geographic);
+
+/* Colour strings: a name, "#rrggbb", "#rrggbbaa" or "rgba(r,g,b,a)" with a from 0 to 1.
+ * Parse writes r, g, b, a as four bytes into out. */
+int         mapnik_color_parse(const char* text, unsigned char* out);
+/* Mapnik's own spelling: "rgb(255,0,0)" or "rgba(255,0,0,0.5)". */
+const char* mapnik_color_to_string(int r, int g, int b, int a);
+/* "#rrggbb", or "#rrggbbaa" when not opaque. */
+const char* mapnik_color_to_hex(int r, int g, int b, int a);
+
 /* ---- map ---------------------------------------------------------------------------------- */
 
 mapnik_map_t* mapnik_map_create(int width, int height);
@@ -67,6 +77,33 @@ const char* mapnik_map_get_background_image(mapnik_map_t* m);
 void        mapnik_map_set_background_image(mapnik_map_t* m, const char* path);
 double      mapnik_map_get_background_image_opacity(mapnik_map_t* m);
 void        mapnik_map_set_background_image_opacity(mapnik_map_t* m, double opacity);
+
+/* Blend mode names as in the XML, e.g. "multiply". NULL if unset. -1 from the setter for an unknown name. */
+const char* mapnik_map_get_background_image_comp_op(mapnik_map_t* m);
+int         mapnik_map_set_background_image_comp_op(mapnik_map_t* m, const char* name);
+
+const char* mapnik_map_get_font_directory(mapnik_map_t* m);  /* NULL if unset */
+void        mapnik_map_set_font_directory(mapnik_map_t* m, const char* dir);
+
+/* Extra parameters: arbitrary key/value pairs stored on the map, written as <Parameters> in XML.
+ * By index in key order. Types: 0 null, 1 boolean, 2 integer, 3 double, 4 string, -1 bad index. */
+int         mapnik_map_param_count(mapnik_map_t* m);
+const char* mapnik_map_param_name(mapnik_map_t* m, int index);
+int         mapnik_map_param_type(mapnik_map_t* m, int index);
+int         mapnik_map_param_bool(mapnik_map_t* m, int index);
+long long   mapnik_map_param_int(mapnik_map_t* m, int index);
+double      mapnik_map_param_double(mapnik_map_t* m, int index);
+const char* mapnik_map_param_string(mapnik_map_t* m, int index);
+void        mapnik_map_set_param_string(mapnik_map_t* m, const char* key, const char* value);
+void        mapnik_map_set_param_int(mapnik_map_t* m, const char* key, long long value);
+void        mapnik_map_set_param_double(mapnik_map_t* m, const char* key, double value);
+void        mapnik_map_set_param_bool(mapnik_map_t* m, const char* key, int value);
+void        mapnik_map_remove_param(mapnik_map_t* m, const char* key);
+
+/* Convert between map coordinates (in the map's projection) and pixels of the rendered image.
+ * In place. The map needs an extent, e.g. from zoom_to_box. */
+void        mapnik_map_world_to_pixel(mapnik_map_t* m, double* x, double* y);
+void        mapnik_map_pixel_to_world(mapnik_map_t* m, double* x, double* y);
 
 int  mapnik_map_get_buffer_size(mapnik_map_t* m);
 void mapnik_map_set_buffer_size(mapnik_map_t* m, int size);
@@ -142,6 +179,15 @@ void mapnik_layer_set_cache_features(mapnik_layer_t* l, int v);
 const char* mapnik_layer_get_group_by(mapnik_layer_t* l);
 void        mapnik_layer_set_group_by(mapnik_layer_t* l, const char* column);
 
+/* Blend mode name, e.g. "multiply". NULL if unset. -1 from the setter for an unknown name. */
+const char* mapnik_layer_get_comp_op(mapnik_layer_t* l);
+int         mapnik_layer_set_comp_op(mapnik_layer_t* l, const char* name);
+
+/* Child layers. add_child copies. child_copy returns a new layer to free, or NULL for a bad index. */
+void            mapnik_layer_add_child(mapnik_layer_t* parent, mapnik_layer_t* child);
+int             mapnik_layer_child_count(mapnik_layer_t* l);
+mapnik_layer_t* mapnik_layer_child_copy(mapnik_layer_t* l, int index);
+
 double mapnik_layer_get_opacity(mapnik_layer_t* l);
 void   mapnik_layer_set_opacity(mapnik_layer_t* l, double v);
 
@@ -179,6 +225,18 @@ int  mapnik_datasource_type(mapnik_datasource_t* ds);
 /* 0 unknown, 1 point, 2 linestring, 3 polygon, 4 collection. */
 int  mapnik_datasource_geometry_type(mapnik_datasource_t* ds);
 int  mapnik_datasource_envelope(mapnik_datasource_t* ds, double* out);
+
+const char* mapnik_datasource_layer_name(mapnik_datasource_t* ds);
+const char* mapnik_datasource_encoding(mapnik_datasource_t* ds);
+
+/* The parameters the datasource was created with, by index in key order. Types as for map parameters. */
+int         mapnik_datasource_param_count(mapnik_datasource_t* ds);
+const char* mapnik_datasource_param_name(mapnik_datasource_t* ds, int index);
+int         mapnik_datasource_param_type(mapnik_datasource_t* ds, int index);
+int         mapnik_datasource_param_bool(mapnik_datasource_t* ds, int index);
+long long   mapnik_datasource_param_int(mapnik_datasource_t* ds, int index);
+double      mapnik_datasource_param_double(mapnik_datasource_t* ds, int index);
+const char* mapnik_datasource_param_string(mapnik_datasource_t* ds, int index);
 
 int         mapnik_datasource_field_count(mapnik_datasource_t* ds);
 const char* mapnik_datasource_field_name(mapnik_datasource_t* ds, int index);

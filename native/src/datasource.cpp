@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "params_access.hpp"
 
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/feature_layer_desc.hpp>
@@ -42,6 +43,48 @@ int mapnik_datasource_geometry_type(mapnik_datasource_t* ds) {
 
 int mapnik_datasource_envelope(mapnik_datasource_t* ds, double* out) {
     return guarded([&] { write_box(ds->ds->envelope(), out); });
+}
+
+const char* mapnik_datasource_layer_name(mapnik_datasource_t* ds) {
+    auto desc = ds->ds->get_descriptor();
+    return text(desc.get_name());
+}
+
+const char* mapnik_datasource_encoding(mapnik_datasource_t* ds) {
+    auto desc = ds->ds->get_descriptor();
+    return text(desc.get_encoding());
+}
+
+int mapnik_datasource_param_count(mapnik_datasource_t* ds) { return static_cast<int>(ds->ds->params().size()); }
+
+const char* mapnik_datasource_param_name(mapnik_datasource_t* ds, int i) {
+    auto p = param_at(ds->ds->params(), i);
+    return p.first ? text(*p.first) : nullptr;
+}
+
+int mapnik_datasource_param_type(mapnik_datasource_t* ds, int i) {
+    auto p = param_at(ds->ds->params(), i);
+    return p.second ? param_type(*p.second) : -1;
+}
+
+int mapnik_datasource_param_bool(mapnik_datasource_t* ds, int i) {
+    auto p = param_at(ds->ds->params(), i);
+    return p.second ? param_bool(*p.second) : 0;
+}
+
+long long mapnik_datasource_param_int(mapnik_datasource_t* ds, int i) {
+    auto p = param_at(ds->ds->params(), i);
+    return p.second ? param_int(*p.second) : 0;
+}
+
+double mapnik_datasource_param_double(mapnik_datasource_t* ds, int i) {
+    auto p = param_at(ds->ds->params(), i);
+    return p.second ? param_double(*p.second) : 0;
+}
+
+const char* mapnik_datasource_param_string(mapnik_datasource_t* ds, int i) {
+    auto p = param_at(ds->ds->params(), i);
+    return p.second ? text(param_string(*p.second)) : nullptr;
 }
 
 // get_descriptor() returns by value, so keep the copy alive while reading from it.

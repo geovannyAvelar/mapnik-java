@@ -31,6 +31,14 @@ public final class Mapnik {
             : java.util.Collections.unmodifiableList(java.util.Arrays.asList(names.split("\n")));
     }
 
+    /**
+     * The scale denominator for a map scale in projection units per pixel. Pass {@code geographic}
+     * true for degrees. This is the number layers and rules compare against their scale ranges.
+     */
+    public static double scaleDenominator(double mapUnitsPerPixel, boolean geographic) {
+        return NativeApi.INSTANCE.mapnik_scale_denominator(mapUnitsPerPixel, geographic ? 1 : 0);
+    }
+
     /** True if Mapnik was built with Cairo, which PDF, SVG and PostScript output needs. */
     public static boolean hasCairo() {
         return NativeApi.INSTANCE.mapnik_cairo_available() == 1;

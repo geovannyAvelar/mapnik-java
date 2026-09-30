@@ -20,6 +20,10 @@ interface NativeApi extends Library {
     int mapnik_register_datasources(String dir);
     int mapnik_register_fonts(String dir);
     String mapnik_datasource_plugin_names();
+    double mapnik_scale_denominator(double mapUnitsPerPixel, int geographic);
+    int mapnik_color_parse(String text, byte[] out);
+    String mapnik_color_to_string(int r, int g, int b, int a);
+    String mapnik_color_to_hex(int r, int g, int b, int a);
 
     // map
     Pointer mapnik_map_create(int width, int height);
@@ -39,6 +43,24 @@ interface NativeApi extends Library {
     void mapnik_map_set_background_image(Pointer map, String path);
     double mapnik_map_get_background_image_opacity(Pointer map);
     void mapnik_map_set_background_image_opacity(Pointer map, double opacity);
+    String mapnik_map_get_background_image_comp_op(Pointer map);
+    int mapnik_map_set_background_image_comp_op(Pointer map, String name);
+    String mapnik_map_get_font_directory(Pointer map);
+    void mapnik_map_set_font_directory(Pointer map, String dir);
+    int mapnik_map_param_count(Pointer map);
+    String mapnik_map_param_name(Pointer map, int index);
+    int mapnik_map_param_type(Pointer map, int index);
+    int mapnik_map_param_bool(Pointer map, int index);
+    long mapnik_map_param_int(Pointer map, int index);
+    double mapnik_map_param_double(Pointer map, int index);
+    String mapnik_map_param_string(Pointer map, int index);
+    void mapnik_map_set_param_string(Pointer map, String key, String value);
+    void mapnik_map_set_param_int(Pointer map, String key, long value);
+    void mapnik_map_set_param_double(Pointer map, String key, double value);
+    void mapnik_map_set_param_bool(Pointer map, String key, int value);
+    void mapnik_map_remove_param(Pointer map, String key);
+    void mapnik_map_world_to_pixel(Pointer map, double[] x, double[] y);
+    void mapnik_map_pixel_to_world(Pointer map, double[] x, double[] y);
     int mapnik_map_get_buffer_size(Pointer map);
     void mapnik_map_set_buffer_size(Pointer map, int size);
     int mapnik_map_get_maximum_extent(Pointer map, double[] out);
@@ -93,6 +115,11 @@ interface NativeApi extends Library {
     void mapnik_layer_set_cache_features(Pointer layer, int v);
     String mapnik_layer_get_group_by(Pointer layer);
     void mapnik_layer_set_group_by(Pointer layer, String column);
+    String mapnik_layer_get_comp_op(Pointer layer);
+    int mapnik_layer_set_comp_op(Pointer layer, String name);
+    void mapnik_layer_add_child(Pointer parent, Pointer child);
+    int mapnik_layer_child_count(Pointer layer);
+    Pointer mapnik_layer_child_copy(Pointer layer, int index);
     double mapnik_layer_get_opacity(Pointer layer);
     void mapnik_layer_set_opacity(Pointer layer, double v);
     int mapnik_layer_get_buffer_size(Pointer layer, int[] out);
@@ -117,6 +144,15 @@ interface NativeApi extends Library {
     int mapnik_datasource_type(Pointer datasource);
     int mapnik_datasource_geometry_type(Pointer datasource);
     int mapnik_datasource_envelope(Pointer datasource, double[] out);
+    String mapnik_datasource_layer_name(Pointer datasource);
+    String mapnik_datasource_encoding(Pointer datasource);
+    int mapnik_datasource_param_count(Pointer datasource);
+    String mapnik_datasource_param_name(Pointer datasource, int index);
+    int mapnik_datasource_param_type(Pointer datasource, int index);
+    int mapnik_datasource_param_bool(Pointer datasource, int index);
+    long mapnik_datasource_param_int(Pointer datasource, int index);
+    double mapnik_datasource_param_double(Pointer datasource, int index);
+    String mapnik_datasource_param_string(Pointer datasource, int index);
     int mapnik_datasource_field_count(Pointer datasource);
     String mapnik_datasource_field_name(Pointer datasource, int index);
     int mapnik_datasource_field_type(Pointer datasource, int index);

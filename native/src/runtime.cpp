@@ -1,7 +1,9 @@
 #include "common.hpp"
 
+#include <mapnik/color.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/scale_denominator.hpp>
 #include <mapnik/version.hpp>
 
 namespace mc {
@@ -16,6 +18,28 @@ extern "C" {
 const char* mapnik_last_error(void) { return g_error.c_str(); }
 const char* mapnik_version(void) { return MAPNIK_VERSION_STRING; }
 int mapnik_version_number(void) { return MAPNIK_VERSION; }
+
+double mapnik_scale_denominator(double scale, int geographic) {
+    return mapnik::scale_denominator(scale, geographic != 0);
+}
+
+int mapnik_color_parse(const char* t, unsigned char* out) {
+    return guarded([&] {
+        mapnik::color c(t);
+        out[0] = c.red();
+        out[1] = c.green();
+        out[2] = c.blue();
+        out[3] = c.alpha();
+    });
+}
+
+static mapnik::color make_color(int r, int g, int b, int a) {
+    auto clamp = [](int v) { return static_cast<std::uint8_t>(v < 0 ? 0 : v > 255 ? 255 : v); };
+    return mapnik::color(clamp(r), clamp(g), clamp(b), clamp(a));
+}
+
+const char* mapnik_color_to_string(int r, int g, int b, int a) { return text(make_color(r, g, b, a).to_string()); }
+const char* mapnik_color_to_hex(int r, int g, int b, int a) { return text(make_color(r, g, b, a).to_hex_string()); }
 
 int mapnik_register_datasources(const char* dir) {
     return guarded([&] { mapnik::datasource_cache::instance().register_datasources(dir); });

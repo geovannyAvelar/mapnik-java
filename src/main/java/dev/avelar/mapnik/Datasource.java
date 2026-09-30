@@ -125,6 +125,27 @@ public final class Datasource implements AutoCloseable {
         return Featureset.check(N.mapnik_datasource_features_at_point(ptr(), x, y, tolerance));
     }
 
+    /** The name the datasource gives its data, such as a table or layer name. May be empty. */
+    public String layerName() { return N.mapnik_datasource_layer_name(ptr()); }
+
+    /** The text encoding of attribute data, for example {@code utf-8}. */
+    public String encoding() { return N.mapnik_datasource_encoding(ptr()); }
+
+    /**
+     * The parameters the datasource holds, in key order: the ones you passed, plus any the plugin
+     * filled in. Values are {@link String}, {@link Boolean}, {@link Long}, {@link Double} or null.
+     */
+    public Map<String, Object> parameters() {
+        Pointer p = ptr();
+        return ParamValues.read(N.mapnik_datasource_param_count(p),
+            i -> N.mapnik_datasource_param_name(p, i),
+            i -> N.mapnik_datasource_param_type(p, i),
+            i -> N.mapnik_datasource_param_bool(p, i) == 1,
+            i -> N.mapnik_datasource_param_int(p, i),
+            i -> N.mapnik_datasource_param_double(p, i),
+            i -> N.mapnik_datasource_param_string(p, i));
+    }
+
     Pointer ptr() {
         if (handle == null) {
             throw new IllegalStateException("datasource closed");

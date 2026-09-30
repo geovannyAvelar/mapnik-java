@@ -64,6 +64,10 @@ public final class Image implements AutoCloseable {
         return this;
     }
 
+    public Image fill(Color color) {
+        return fill(color.toStyleString());
+    }
+
     /** True if every pixel has the same value. */
     public boolean isSolid() { return N.mapnik_image_is_solid(ptr()) == 1; }
 

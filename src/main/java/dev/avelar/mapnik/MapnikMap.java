@@ -116,12 +116,26 @@ public final class MapnikMap implements AutoCloseable {
         return this;
     }
 
+    public MapnikMap setBackground(Color color) {
+        return setBackground(color.toStyleString());
+    }
+
     public Optional<String> backgroundImage() {
         return Optional.ofNullable(N.mapnik_map_get_background_image(ptr()));
     }
 
     public MapnikMap setBackgroundImage(Path image) {
         N.mapnik_map_set_background_image(ptr(), image.toString());
+        return this;
+    }
+
+    /** How the background image is blended onto the background colour, by name, such as {@code multiply}. Empty if unset. */
+    public Optional<String> backgroundImageCompOp() {
+        return Optional.ofNullable(N.mapnik_map_get_background_image_comp_op(ptr()));
+    }
+
+    public MapnikMap setBackgroundImageCompOp(String name) {
+        Mapnik.check(N.mapnik_map_set_background_image_comp_op(ptr(), name));
         return this;
     }
 
@@ -149,6 +163,86 @@ public final class MapnikMap implements AutoCloseable {
     public MapnikMap loadFonts() {
         Mapnik.check(N.mapnik_map_load_fonts(ptr()));
         return this;
+    }
+
+    /** The directory set for fonts on this map, if any. */
+    public Optional<String> fontDirectory() {
+        return Optional.ofNullable(N.mapnik_map_get_font_directory(ptr()));
+    }
+
+    public MapnikMap setFontDirectory(Path dir) {
+        N.mapnik_map_set_font_directory(ptr(), dir.toString());
+        return this;
+    }
+
+    // ------------------------------------------------------------------ extra parameters
+
+    /**
+     * Arbitrary key/value pairs stored on the map and written as {@code <Parameters>} in its XML,
+     * for your own metadata. In key order. Values are {@link String}, {@link Boolean}, {@link Long},
+     * {@link Double} or null.
+     */
+    public Map<String, Object> parameters() {
+        Pointer p = ptr();
+        return ParamValues.read(N.mapnik_map_param_count(p),
+            i -> N.mapnik_map_param_name(p, i),
+            i -> N.mapnik_map_param_type(p, i),
+            i -> N.mapnik_map_param_bool(p, i) == 1,
+            i -> N.mapnik_map_param_int(p, i),
+            i -> N.mapnik_map_param_double(p, i),
+            i -> N.mapnik_map_param_string(p, i));
+    }
+
+    /** Set a parameter: a String, Boolean, Integer, Long, Double or Float. Replaces an existing one. */
+    public MapnikMap setParameter(String key, Object value) {
+        if (!ParamValues.supported(value)) {
+            throw new IllegalArgumentException("unsupported parameter type for '" + key + "': "
+                + (value == null ? "null" : value.getClass()));
+        }
+        if (value instanceof String) {
+            N.mapnik_map_set_param_string(ptr(), key, (String) value);
+        } else if (value instanceof Boolean) {
+            N.mapnik_map_set_param_bool(ptr(), key, (Boolean) value ? 1 : 0);
+        } else if (value instanceof Double || value instanceof Float) {
+            N.mapnik_map_set_param_double(ptr(), key, ((Number) value).doubleValue());
+        } else {
+            N.mapnik_map_set_param_int(ptr(), key, ((Number) value).longValue());
+        }
+        return this;
+    }
+
+    public MapnikMap removeParameter(String key) {
+        N.mapnik_map_remove_param(ptr(), key);
+        return this;
+    }
+
+    // ------------------------------------------------------------------ pixels and map coordinates
+
+    /**
+     * Where a point in map coordinates (the map's projection) lands in the rendered image: x to the
+     * right, y down from the top left. Needs an extent, for example from {@link #zoomToBox}.
+     */
+    public Point2d toPixel(double x, double y) {
+        double[] px = {x};
+        double[] py = {y};
+        N.mapnik_map_world_to_pixel(ptr(), px, py);
+        return new Point2d(px[0], py[0]);
+    }
+
+    public Point2d toPixel(Point2d world) {
+        return toPixel(world.x(), world.y());
+    }
+
+    /** The map coordinates under a pixel of the rendered image. */
+    public Point2d toWorld(double pixelX, double pixelY) {
+        double[] px = {pixelX};
+        double[] py = {pixelY};
+        N.mapnik_map_pixel_to_world(ptr(), px, py);
+        return new Point2d(px[0], py[0]);
+    }
+
+    public Point2d toWorld(Point2d pixel) {
+        return toWorld(pixel.x(), pixel.y());
     }
 
     public String basePath() { return N.mapnik_map_get_base_path(ptr()); }

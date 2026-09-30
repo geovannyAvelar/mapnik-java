@@ -1,5 +1,7 @@
 #include "common.hpp"
 
+#include <mapnik/image_compositing.hpp>
+
 using namespace mc;
 
 extern "C" {
@@ -43,6 +45,33 @@ void mapnik_layer_set_cache_features(mapnik_layer_t* l, int v) { L(l).set_cache_
 
 const char* mapnik_layer_get_group_by(mapnik_layer_t* l) { return text(L(l).group_by()); }
 void mapnik_layer_set_group_by(mapnik_layer_t* l, const char* c) { L(l).set_group_by(c); }
+
+const char* mapnik_layer_get_comp_op(mapnik_layer_t* l) {
+    auto op = L(l).comp_op();
+    if (!op) return nullptr;
+    auto name = mapnik::comp_op_to_string(*op);
+    return name ? text(*name) : nullptr;
+}
+
+int mapnik_layer_set_comp_op(mapnik_layer_t* l, const char* name) {
+    auto op = mapnik::comp_op_from_string(name);
+    if (!op) {
+        g_error = std::string("unknown blend mode: ") + name;
+        return -1;
+    }
+    L(l).set_comp_op(*op);
+    return 0;
+}
+
+void mapnik_layer_add_child(mapnik_layer_t* parent, mapnik_layer_t* child) { L(parent).add_layer(L(child)); }
+int mapnik_layer_child_count(mapnik_layer_t* l) { return static_cast<int>(L(l).layers().size()); }
+
+mapnik_layer_t* mapnik_layer_child_copy(mapnik_layer_t* l, int i) {
+    if (!valid_index(i, L(l).layers().size())) return nullptr;
+    mapnik_layer_t* out = nullptr;
+    guarded([&] { out = H(new mapnik::layer(L(l).layers()[static_cast<size_t>(i)])); });
+    return out;
+}
 
 double mapnik_layer_get_opacity(mapnik_layer_t* l) { return L(l).get_opacity(); }
 void mapnik_layer_set_opacity(mapnik_layer_t* l, double v) { L(l).set_opacity(v); }

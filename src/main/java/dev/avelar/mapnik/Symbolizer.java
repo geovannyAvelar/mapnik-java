@@ -101,9 +101,13 @@ public final class Symbolizer {
     /** Fill colour: a name, {@code #rrggbb} or {@code rgba(r,g,b,a)}. */
     public Symbolizer fill(String color) { return attr("fill", color); }
 
+    public Symbolizer fill(Color color) { return fill(color.toStyleString()); }
+
     public Symbolizer fillOpacity(double v) { return attr("fill-opacity", v); }
 
     public Symbolizer stroke(String color) { return attr("stroke", color); }
+
+    public Symbolizer stroke(Color color) { return stroke(color.toStyleString()); }
 
     public Symbolizer strokeWidth(double v) { return attr("stroke-width", v); }
 
@@ -140,6 +144,8 @@ public final class Symbolizer {
 
     /** Text: outline colour and width. */
     public Symbolizer halo(String color, double radius) { return attr("halo-fill", color).attr("halo-radius", radius); }
+
+    public Symbolizer halo(Color color, double radius) { return halo(color.toStyleString(), radius); }
 
     // ---------------------------------------------------------------- output
 

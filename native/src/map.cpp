@@ -1,8 +1,11 @@
 #include "common.hpp"
+#include "params_access.hpp"
 
 #include <mapnik/color.hpp>
 #include <mapnik/feature_type_style.hpp>
 #include <mapnik/font_set.hpp>
+#include <mapnik/image_compositing.hpp>
+#include <mapnik/view_transform.hpp>
 #include <mapnik/load_map.hpp>
 #include <mapnik/save_map.hpp>
 
@@ -72,6 +75,75 @@ double mapnik_map_get_background_image_opacity(mapnik_map_t* m) {
 void mapnik_map_set_background_image_opacity(mapnik_map_t* m, double v) {
     m->map.set_background_image_opacity(static_cast<float>(v));
 }
+
+const char* mapnik_map_get_background_image_comp_op(mapnik_map_t* m) {
+    auto name = mapnik::comp_op_to_string(m->map.background_image_comp_op());
+    return name ? text(*name) : nullptr;
+}
+
+int mapnik_map_set_background_image_comp_op(mapnik_map_t* m, const char* name) {
+    auto op = mapnik::comp_op_from_string(name);
+    if (!op) {
+        g_error = std::string("unknown blend mode: ") + name;
+        return -1;
+    }
+    m->map.set_background_image_comp_op(*op);
+    return 0;
+}
+
+const char* mapnik_map_get_font_directory(mapnik_map_t* m) {
+    auto const& d = m->map.font_directory();
+    return d ? text(*d) : nullptr;
+}
+
+void mapnik_map_set_font_directory(mapnik_map_t* m, const char* dir) { m->map.set_font_directory(dir); }
+
+int mapnik_map_param_count(mapnik_map_t* m) { return static_cast<int>(m->map.get_extra_parameters().size()); }
+
+const char* mapnik_map_param_name(mapnik_map_t* m, int i) {
+    auto p = param_at(m->map.get_extra_parameters(), i);
+    return p.first ? text(*p.first) : nullptr;
+}
+
+int mapnik_map_param_type(mapnik_map_t* m, int i) {
+    auto p = param_at(m->map.get_extra_parameters(), i);
+    return p.second ? param_type(*p.second) : -1;
+}
+
+int mapnik_map_param_bool(mapnik_map_t* m, int i) {
+    auto p = param_at(m->map.get_extra_parameters(), i);
+    return p.second ? param_bool(*p.second) : 0;
+}
+
+long long mapnik_map_param_int(mapnik_map_t* m, int i) {
+    auto p = param_at(m->map.get_extra_parameters(), i);
+    return p.second ? param_int(*p.second) : 0;
+}
+
+double mapnik_map_param_double(mapnik_map_t* m, int i) {
+    auto p = param_at(m->map.get_extra_parameters(), i);
+    return p.second ? param_double(*p.second) : 0;
+}
+
+const char* mapnik_map_param_string(mapnik_map_t* m, int i) {
+    auto p = param_at(m->map.get_extra_parameters(), i);
+    return p.second ? text(param_string(*p.second)) : nullptr;
+}
+
+void mapnik_map_set_param_string(mapnik_map_t* m, const char* k, const char* v) {
+    m->map.get_extra_parameters()[k] = std::string(v);
+}
+void mapnik_map_set_param_int(mapnik_map_t* m, const char* k, long long v) {
+    m->map.get_extra_parameters()[k] = static_cast<mapnik::value_integer>(v);
+}
+void mapnik_map_set_param_double(mapnik_map_t* m, const char* k, double v) { m->map.get_extra_parameters()[k] = v; }
+void mapnik_map_set_param_bool(mapnik_map_t* m, const char* k, int v) {
+    m->map.get_extra_parameters()[k] = static_cast<mapnik::value_bool>(v != 0);
+}
+void mapnik_map_remove_param(mapnik_map_t* m, const char* k) { m->map.get_extra_parameters().erase(k); }
+
+void mapnik_map_world_to_pixel(mapnik_map_t* m, double* x, double* y) { m->map.transform().forward(x, y); }
+void mapnik_map_pixel_to_world(mapnik_map_t* m, double* x, double* y) { m->map.transform().backward(x, y); }
 
 int mapnik_map_get_buffer_size(mapnik_map_t* m) { return m->map.buffer_size(); }
 void mapnik_map_set_buffer_size(mapnik_map_t* m, int size) { m->map.set_buffer_size(size); }

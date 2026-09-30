@@ -120,6 +120,41 @@ public final class Layer implements AutoCloseable {
         return this;
     }
 
+    /**
+     * How this layer is blended onto what is below it, by the name used in styles, such as
+     * {@code multiply}, {@code screen} or {@code src-over}. Empty if never set.
+     */
+    public Optional<String> compOp() {
+        return Optional.ofNullable(N.mapnik_layer_get_comp_op(ptr()));
+    }
+
+    /** Set the blend mode. Throws {@link MapnikException} for a name Mapnik does not know. */
+    public Layer setCompOp(String name) {
+        Mapnik.check(N.mapnik_layer_set_comp_op(ptr(), name));
+        return this;
+    }
+
+    // ------------------------------------------------------------------ child layers
+
+    /** Add a copy of {@code child} under this layer, to group layers. */
+    public Layer addChild(Layer child) {
+        N.mapnik_layer_add_child(ptr(), child.ptr());
+        return this;
+    }
+
+    public int childCount() {
+        return N.mapnik_layer_child_count(ptr());
+    }
+
+    /** A copy of the child at {@code index}, which you own and should close. Changes to it do not affect this layer. */
+    public Layer childCopy(int index) {
+        Pointer p = N.mapnik_layer_child_copy(ptr(), index);
+        if (p == null) {
+            throw new IndexOutOfBoundsException("child index " + index + ", count " + childCount());
+        }
+        return new Layer(p, null);
+    }
+
     // ------------------------------------------------------------------ behaviour flags
 
     public boolean isQueryable() { return N.mapnik_layer_get_queryable(ptr()) == 1; }
