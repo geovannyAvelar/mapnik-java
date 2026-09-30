@@ -10,6 +10,13 @@
   <name>mapnik-java</name>
   <description>Java wrapper for Mapnik via C shim and JNA</description>
 
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -71,3 +71,7 @@ src/main/java/org/mapnik Java wrapper
 src/test/java/org/mapnik JUnit tests
 pom.xml                  Maven build
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE). Mapnik itself is licensed separately under the LGPL.
