@@ -158,6 +158,86 @@ Builders write Mapnik's own XML, so every symbolizer and attribute Mapnik suppor
 
 `Rule.alsoFilter()` adds detail to features an earlier rule matched, and does nothing in `Style.FilterMode.FIRST` mode.
 
+### Geometry and data from Java
+
+```java
+Geometry poly = Geometry.polygon(new double[] {0, 0, 10, 0, 10, 10, 0, 10, 0, 0});
+Geometry line = Geometry.fromWkt("LINESTRING(0 0, 5 5, 10 0)");
+Geometry any  = Geometry.fromGeoJson("{\"type\":\"Point\",\"coordinates\":[1,2]}");
+poly.toWkt();  poly.toGeoJson();  poly.toWkb();        // and back with fromWkb
+
+poly.centroid();              poly.interiorPoint();    // interiorPoint is a good label position
+poly.closestPoint(15, 5);     // the point and its distance
+poly.isValid();               poly.validityReason();
+line.simplify(SimplifyAlgorithm.DOUGLAS_PEUCKER, 0.5);
+line.offset(2);               // a parallel line
+poly.reproject(transform);    // with a CoordinateTransform
+
+try (MemoryDatasource ds = MemoryDatasource.create()) {     // render data that is not in a file
+    ds.add(Geometry.point(10, 20), Collections.singletonMap("name", "Depot"));
+    ds.addGeoJson(featureCollectionText);
+    layer.setDatasource(ds);
+}
+```
+
+Geometries are immutable and 2D. A memory datasource reports its geometry type as `COLLECTION` and no fields, because Mapnik does not inspect in-memory features, but filters and labels see every attribute.
+
+### Expressions
+
+```java
+try (Expression e = Expression.parse("[population] > 1000 and [kind] = 'city'")) {
+    e.matches(feature);                       // filter features in Java the way Mapnik will
+    e.evaluate(feature, Map.of("zoom", 5));   // values for @zoom
+}
+Expression.isValid("[broken");                // false: check a filter before using it in a style
+PathExpression.parse("icons/[type].png").evaluate(feature);
+Transforms.isValid("translate(10,20) rotate(45)");
+```
+
+Mapnik's `/` divides whole numbers to a whole number, `match()` must match the whole value, and a missing attribute is `null`.
+
+### Images, rasters and colour
+
+```java
+try (Image img = map.renderToImage()) {
+    img.filter(ImageFilters.stackBlur(4, 4), ImageFilters.gray());
+    img.composite(overlay, BlendMode.MULTIPLY, 0.8, 10, 10);
+    try (Image small = img.scaled(128, 128, ScalingMethod.LANCZOS)) { ... }
+    img.crop(0, 0, 100, 100);
+}
+Image.probe(bytes);                           // size and format without decoding
+Color.parse("rebeccapurple").toHex();         // "#663399"
+
+Symbolizer.raster().colorizer(RasterColorizer.create()
+    .defaultMode(RasterColorizer.Mode.LINEAR).stop(0, "blue").stop(500, "green").stop(3000, "white"));
+image.warp("epsg:4326", sourceExtent, "epsg:3857", targetExtent, 512, 512, ScalingMethod.BILINEAR);
+```
+
+`Image` is 8-bit RGBA with straight alpha. The raster colorizer only applies to single-band data, which a datasource such as GDAL supplies to the renderer; Mapnik's `raster` plugin decodes a PNG to RGBA.
+
+### Tiles and UTFGrid
+
+```java
+Tiles.Tile t = Tiles.tileAt(-0.1276, 51.5072, 10);     // 10/511/340
+t.bounds();  t.lonLatBounds();  t.quadKey();  t.parent();  t.children();
+Tiles.covering(new Box2d(-1, 50, 1, 52), 8);
+
+byte[] png = map.renderTileToBytes(t, "png", 32);      // 32 px metatile margin so labels line up
+UtfGrid grid = map.renderGrid("places", "__id__", List.of("name", "pop"), 4);
+grid.attributesAt(120, 80);                            // what is under this pixel
+```
+
+The map must be square to render tiles. `renderTile` puts it in Web Mercator for the render and restores its projection, extent, size, aspect mode and buffer afterwards.
+
+### Diagnostics
+
+```java
+Mapnik.supports(Capability.CAIRO);            // what this Mapnik was built with
+Mapnik.fontFaces();                           // names to use as face-name
+Logging.setSeverity(Logging.Severity.WARN);   // Mapnik explains why a style draws nothing
+Logging.toFile(Paths.get("mapnik.log"));
+```
+
 ### Features and queries
 
 ```java
@@ -225,7 +305,7 @@ Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plug
 
 ## Status
 
-The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections, rendering and styling in code work today. See the roadmap for what is left out. See [docs/ROADMAP.md](docs/ROADMAP.md).
+The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections, rendering, styling in code, images, geometry, expressions, tiles and UTFGrid work today. See the roadmap for what is left out. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 
@@ -241,7 +321,7 @@ Both have their own README.
 ./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
 ```
 
-Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, projections, image formats and Cairo, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, styles built in code, and concurrent rendering with one map per thread.
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable, which wins when set and is required if Mapnik has no `mapnik-config`. They cover rendering a GeoJSON polygon and checking pixels, reading features and geometry output, projections, image formats and Cairo, image operations, rasters, geometry and memory datasources, expressions, tiles stitched against a full render, UTFGrid, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, styles built in code, and concurrent rendering with one map per thread.
 
 Text tests need fonts: they use `MAPNIK_FONTS`, or `mapnik-config --fonts`, and skip themselves if neither is available.
 

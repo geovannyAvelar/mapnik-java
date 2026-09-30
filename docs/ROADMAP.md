@@ -68,53 +68,54 @@ check real output, such as pixels and XML.
 - Not done: raster colorizer stops, group symbolizers, and text placement options that need nested
   XML elements. Use an XML style for those.
 
-## Phase 6: gaps in the classes already wrapped
+## Phase 6: gaps in the classes already wrapped (done)
 
-- `Layer`: blend mode (`comp_op`), child layers.
-- `MapnikMap`: background image blend mode, extra parameters, font directory, pixel and map
-  coordinate conversion (`view_transform`).
-- `Mapnik.scaleDenominator(...)`.
+- `Layer`: blend mode, child layers. `MapnikMap`: background image blend mode, extra parameters, font
+  directory, pixel and map coordinate conversion. `Mapnik.scaleDenominator`.
 - `Datasource`: layer name, encoding, parameters read back.
-- `Color`: parse a colour string, read its components, format it, and accept it where strings are
-  accepted today.
+- `Color`: parse, components, formatting, and accepted wherever a colour string is.
 
-## Phase 7: runtime and diagnostics
+## Phase 7: runtime and diagnostics (done)
 
-- Compiled-in capabilities (Cairo, PNG, JPEG, WebP, TIFF, PROJ) and readable image formats.
-- Logging: severity, format, per-object severity.
-- Fonts: registered face names, register one font file, list font directories.
-- Plugins: register one plugin file, list plugin directories. Clear the marker cache.
+- `Capability` and `Mapnik.supports`. `Logging`: severity, per-object severity, format, file or console.
+- Fonts: list face names, find a face's file, register one font file. Plugins: register one file,
+  check a plugin, list directories. `Mapnik.clearCaches`.
 
-## Phase 8: image operations
+## Phase 8: image operations (done)
 
-- Filters (blur, sharpen, emboss, edge detect, invert, and the rest of Mapnik's list), compositing
-  with Mapnik's blend modes, scaling with the different resampling methods, crop, colour to alpha,
-  opacity, premultiply.
-- `Image.probe`: size and format without decoding.
+- `Image.filter` with `ImageFilters`, `composite` with `BlendMode`, `scaled` with `ScalingMethod`,
+  `crop`, `copy`, `applyOpacity`, `colorToAlpha`, and `Image.probe` for size and format without decoding.
+- Premultiplication is handled around each Mapnik call, so `Image` is always straight alpha.
 
-## Phase 9: rasters
+## Phase 9: rasters (done, narrowed)
 
-- Single-band images (gray and float) in `Image`.
-- Raster colorizer stops for the raster symbolizer, and `warp` to reproject a raster.
+- `RasterColorizer` with stops and modes, through nested elements in `Symbolizer`. `Image.warp`.
+- Not done: single-band (gray and float) pixel types in `Image`. `Image` stays 8-bit RGBA. A
+  single-band raster still colours correctly when a datasource such as GDAL supplies it to the
+  renderer, which is how the colorizer tests work.
 
-## Phase 10: geometry and feature building
+## Phase 10: geometry and features (done)
 
-- `Geometry` types built from coordinates in Java, with WKT, WKB and GeoJSON read and write
-  (hand-written, so no dependency on Mapnik's static parser libraries).
-- `Feature` builder and a memory datasource, so data can be rendered straight from Java.
-- Algorithms: centroid, closest point, interior point, validity and simplicity checks, ring
-  orientation fix, simplify, parallel offset. Reproject a geometry or feature.
+- `Geometry` types built from coordinates, with hand-written WKT, WKB and GeoJSON readers and writers,
+  so parsing no longer depends on Mapnik's static libraries.
+- `Feature.create`, GeoJSON features and collections, and `MemoryDatasource` to render data that is
+  not in a file.
+- Algorithms: centroid, interior point, closest point, validity, simple test, winding correction,
+  simplification (four algorithms), line offset, and reprojection of geometries and features.
 
-## Phase 11: expressions
+## Phase 11: expressions (done, narrowed)
 
-- `Expression`: parse and validate a filter, and evaluate it against a `Feature`. Path expressions.
-- Parse transforms.
+- `Expression`: parse and check, evaluate against a `Feature` with variables, `matches` for filters.
+  `PathExpression` and `Transforms.check`.
+- Not done: Mapnik's own normalised spelling of an expression or transform. That function's signature
+  contains an ICU type, so it only links when Mapnik's headers and library use the same ICU version.
 
-## Phase 12: more rendering
+## Phase 12: more rendering (done)
 
-- Render a region with a buffer (`request`) and XYZ tile helpers.
-- Render a single layer or a layer subset.
-- UTFGrid output.
+- `Tiles` for the XYZ grid, `MapnikMap.renderTile` with a metatile buffer that restores the map
+  afterwards, `renderTileToBytes`, `renderLayers`.
+- `renderGrid` and `UtfGrid`: UTFGrid output with keys by id or attribute, chosen fields and a
+  resolution, and a decoder that reads cells by pixel.
 
 ## Phase 13: richer styling
 
