@@ -84,6 +84,10 @@ java -Djna.library.path=build/native -cp ... YourApp
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system.
 
+## Example
+
+`examples/render-demo` is a small app that depends on mapnik-java and renders a map to a PNG. See its README.
+
 ## Testing
 
 ```bash

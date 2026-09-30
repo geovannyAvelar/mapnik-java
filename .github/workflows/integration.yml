@@ -7,6 +7,7 @@ on:
     paths:
       - 'native/**'
       - 'src/**'
+      - 'examples/**'
       - 'build.gradle.kts'
       - 'gradle.properties'
       - '.github/workflows/integration.yml'
@@ -14,6 +15,7 @@ on:
     paths:
       - 'native/**'
       - 'src/**'
+      - 'examples/**'
       - 'build.gradle.kts'
       - 'gradle.properties'
       - '.github/workflows/integration.yml'
@@ -85,6 +87,13 @@ jobs:
 
       - name: Integration tests
         run: ./gradlew integrationTest
+
+      - name: Example app (consumes the library as a dependency)
+        working-directory: examples/render-demo
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test run --args="$RUNNER_TEMP/world.png"
+          file "$RUNNER_TEMP/world.png"
 
       - name: Upload test reports
         if: always()
