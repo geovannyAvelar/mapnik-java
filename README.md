@@ -229,6 +229,37 @@ grid.attributesAt(120, 80);                            // what is under this pix
 
 The map must be square to render tiles. `renderTile` puts it in Web Mercator for the render and restores its projection, extent, size, aspect mode and buffer afterwards.
 
+### Richer styling and reading styles back
+
+```java
+Symbolizer label = Symbolizer.formattedText(
+        TextFormat.of("[name]").fontSize(14).fill("black"),
+        TextFormat.of("' ' + [pop]").fontSize(10).fill("gray"))
+    .faceName("DejaVu Sans Bold")
+    .placementList(TextPlacement.create().fontSize(11), TextPlacement.create().fontSize(9));
+
+Symbolizer cluster = Symbolizer.group().groupColumns(1, 1, "[cluster]").simpleLayout(4)
+    .groupRule(GroupRule.create().add(Symbolizer.markers().fill("red")));
+
+Style s = map.style("roads").get();            // read back: rules, filters, symbolizers
+s.rules().get(0).filterExpression();           // Mapnik's own spelling of the filter
+map.replaceStyle(s);
+Style.fromXml(xmlText);
+```
+
+Mapnik draws a group symbolizer only when it has a column range and a key, which `groupColumns` sets.
+
+### Your own datasource
+
+```java
+FeatureSource source = request -> myIndex.query(request.bbox());   // a List<Feature>; called per render
+try (JavaDatasource ds = JavaDatasource.create(source, worldExtent)) {
+    layer.setDatasource(ds);
+}
+```
+
+Mapnik calls the source while it renders and each render asks again, so data can change between renders. The source must be thread-safe, because maps rendering on different threads call it at the same time. An exception in it fails the render with a `MapnikException` carrying its message.
+
 ### Diagnostics
 
 ```java
@@ -305,7 +336,7 @@ Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plug
 
 ## Status
 
-The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections, rendering, styling in code, images, geometry, expressions, tiles and UTFGrid work today. See the roadmap for what is left out. See [docs/ROADMAP.md](docs/ROADMAP.md).
+The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries, projections, rendering, styling in code, images, geometry, expressions, tiles, UTFGrid, richer styling and your own datasources work today. See the roadmap for what is left out. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 

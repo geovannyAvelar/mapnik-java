@@ -117,15 +117,23 @@ check real output, such as pixels and XML.
 - `renderGrid` and `UtfGrid`: UTFGrid output with keys by id or attribute, chosen fields and a
   resolution, and a decoder that reads cells by pixel.
 
-## Phase 13: richer styling
+## Phase 13: richer styling (done)
 
-- Nested elements in symbolizers: text placements and formats, raster colorizer, group symbolizer.
-- Read a style back as `Style`, `Rule` and `Symbolizer` objects.
+- Nested symbolizer elements: `TextFormat` runs (mixed fonts, sizes and colours in one label),
+  `TextPlacement` alternatives, placement positions, and group symbolizers with `GroupRule`, layouts
+  and the column range and key Mapnik needs before it draws a group.
+- Read styles back: `MapnikMap.styles()`, `style(name)` and `Style.fromXml` give `Style`, `Rule` and
+  `Symbolizer` objects with getters. A SAX reader keeps attribute order and refuses DTDs. What Mapnik
+  writes is accepted again by the strict parser and draws the same.
 
-## Phase 14: Java-implemented datasource
+## Phase 14: datasource implemented in Java (done)
 
-- A Mapnik datasource that calls back into Java for its features.
+- `JavaDatasource` with a `FeatureSource` that Mapnik calls while it renders or queries, given the
+  area, resolution and scale. Optional declared fields, an envelope you can update, errors in the
+  source reported as `MapnikException`, and safe for several maps rendering at once.
+- One static pair of native handlers and an id registry keep the source reachable for as long as
+  Mapnik uses the datasource, and a release callback lets go of it afterwards.
 
 ## Later
 
-Collision detector queries, transliteration, and anything users ask for.
+Collision detector queries, transliteration, raster colorizer and text placement options not covered by a builder (use `Symbolizer.child` with raw XML), and anything users ask for.
