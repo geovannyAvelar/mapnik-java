@@ -16,7 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -25,19 +27,22 @@ import java.util.concurrent.Executors;
 /**
  * A minimal WMS server (1.1.1 and 1.3.0) backed by mapnik-java.
  *
- * <p>Serves one layer, {@value #LAYER}, in EPSG:4326 / CRS:84. Supports GetCapabilities and GetMap.
+ * <p>Serves the layers of the bundled style (found with {@link MapnikMap#layerNames()}) in EPSG:4326,
+ * CRS:84 and EPSG:3857. Supports GetCapabilities and GetMap. {@code LAYERS} selects layers with
+ * {@link MapnikMap#setActiveLayers}; {@code CRS} is applied with {@link MapnikMap#setSrs}.
  * Each request renders with its own {@link MapnikMap}, since maps are not thread-safe.
  */
 public final class WmsServer implements AutoCloseable {
-    static final String LAYER = "world";
     private static final int MAX_SIZE = 4096;
 
     private final HttpServer http;
     private final ExecutorService pool = Executors.newFixedThreadPool(4);
     private final Path style;
+    private final List<String> layers;
 
-    private WmsServer(int port, Path style) throws IOException {
+    private WmsServer(int port, Path style, List<String> layers) throws IOException {
         this.style = style;
+        this.layers = layers;
         this.http = HttpServer.create(new InetSocketAddress(port), 0);
         this.http.createContext("/wms", this::handle);
         this.http.setExecutor(pool);
@@ -56,7 +61,12 @@ public final class WmsServer implements AutoCloseable {
                 Files.copy(in, dir.resolve(f), StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        return new WmsServer(port, dir.resolve("world.xml"));
+        Path style = dir.resolve("world.xml");
+        List<String> layers;
+        try (MapnikMap map = new MapnikMap(1, 1)) {
+            layers = map.load(style).layerNames();
+        }
+        return new WmsServer(port, style, layers);
     }
 
     public int port() {
@@ -76,8 +86,8 @@ public final class WmsServer implements AutoCloseable {
         String base = "http://localhost:" + server.port() + "/wms";
         System.out.println("Mapnik " + Mapnik.version() + ", WMS listening on " + base);
         System.out.println("  " + base + "?SERVICE=WMS&REQUEST=GetCapabilities");
-        System.out.println("  " + base + "?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=" + LAYER
-            + "&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=800&HEIGHT=400&FORMAT=image/png");
+        System.out.println("  " + base + "?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS="
+            + String.join(",", server.layers) + "&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=800&HEIGHT=400&FORMAT=image/png");
     }
 
     // ---------------------------------------------------------------- request handling
@@ -93,7 +103,7 @@ public final class WmsServer implements AutoCloseable {
             if (request.equalsIgnoreCase("GetCapabilities")) {
                 String host = ex.getRequestHeaders().getFirst("Host");
                 String url = "http://" + (host != null ? host : "localhost:" + port()) + "/wms";
-                send(ex, 200, "text/xml", capabilities(url).getBytes(StandardCharsets.UTF_8));
+                send(ex, 200, "text/xml", capabilities(url, layers).getBytes(StandardCharsets.UTF_8));
             } else if (request.equalsIgnoreCase("GetMap")) {
                 getMap(ex, q);
             } else {
@@ -108,9 +118,13 @@ public final class WmsServer implements AutoCloseable {
     }
 
     private void getMap(HttpExchange ex, Map<String, String> q) throws IOException {
-        String layers = q.getOrDefault("layers", "");
-        for (String l : layers.split(",")) {
-            if (!l.equals(LAYER)) {
+        String requested = q.getOrDefault("layers", "");
+        if (requested.isEmpty()) {
+            throw new WmsException("MissingParameterValue", "LAYERS is required");
+        }
+        List<String> wanted = Arrays.asList(requested.split(","));
+        for (String l : wanted) {
+            if (!layers.contains(l)) {
                 throw new WmsException("LayerNotDefined", "Unknown layer: '" + l + "'");
             }
         }
@@ -121,7 +135,7 @@ public final class WmsServer implements AutoCloseable {
             throw new WmsException("MissingParameterValue", v130 ? "CRS is required" : "SRS is required");
         }
         crs = crs.toUpperCase(Locale.ROOT);
-        if (!crs.equals("EPSG:4326") && !crs.equals("CRS:84")) {
+        if (!crs.equals("EPSG:4326") && !crs.equals("CRS:84") && !crs.equals("EPSG:3857")) {
             throw new WmsException("InvalidCRS", "Unsupported CRS: " + crs);
         }
 
@@ -146,7 +160,11 @@ public final class WmsServer implements AutoCloseable {
 
         byte[] image;
         try (MapnikMap map = new MapnikMap(width, height)) {
-            map.load(style).zoomToBox(b[0], b[1], b[2], b[3]);
+            map.load(style);
+            // Layers stay in their own projection; Mapnik reprojects them to the map's.
+            map.setSrs(crs.equals("EPSG:3857") ? "epsg:3857" : "epsg:4326");
+            map.setActiveLayers(wanted);
+            map.zoomToBox(b[0], b[1], b[2], b[3]);
             image = map.renderToBytes(mapnikFormat);
         }
         send(ex, 200, fmt, image);
@@ -191,7 +209,17 @@ public final class WmsServer implements AutoCloseable {
 
     // ---------------------------------------------------------------- documents
 
-    static String capabilities(String url) {
+    static String capabilities(String url, List<String> layers) {
+        StringBuilder sb = new StringBuilder();
+        for (String name : layers) {
+            sb.append("      <Layer queryable=\"0\">\n")
+              .append("        <Name>").append(escape(name)).append("</Name>\n")
+              .append("        <Title>").append(escape(name)).append("</Title>\n")
+              .append("        <BoundingBox CRS=\"EPSG:4326\" minx=\"-90\" miny=\"-180\" maxx=\"90\" maxy=\"180\"/>\n")
+              .append("        <BoundingBox CRS=\"CRS:84\" minx=\"-180\" miny=\"-90\" maxx=\"180\" maxy=\"90\"/>\n")
+              .append("        <BoundingBox CRS=\"EPSG:3857\" minx=\"-20037508\" miny=\"-20037508\" maxx=\"20037508\" maxy=\"20037508\"/>\n")
+              .append("      </Layer>\n");
+        }
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<WMS_Capabilities version=\"1.3.0\" xmlns=\"http://www.opengis.net/wms\" "
             + "xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n"
@@ -216,18 +244,14 @@ public final class WmsServer implements AutoCloseable {
             + "      <Title>Demo</Title>\n"
             + "      <CRS>EPSG:4326</CRS>\n"
             + "      <CRS>CRS:84</CRS>\n"
+            + "      <CRS>EPSG:3857</CRS>\n"
             + "      <EX_GeographicBoundingBox>\n"
             + "        <westBoundLongitude>-180</westBoundLongitude>\n"
             + "        <eastBoundLongitude>180</eastBoundLongitude>\n"
             + "        <southBoundLatitude>-90</southBoundLatitude>\n"
             + "        <northBoundLatitude>90</northBoundLatitude>\n"
             + "      </EX_GeographicBoundingBox>\n"
-            + "      <Layer queryable=\"0\">\n"
-            + "        <Name>" + LAYER + "</Name>\n"
-            + "        <Title>World demo</Title>\n"
-            + "        <BoundingBox CRS=\"EPSG:4326\" minx=\"-90\" miny=\"-180\" maxx=\"90\" maxy=\"180\"/>\n"
-            + "        <BoundingBox CRS=\"CRS:84\" minx=\"-180\" miny=\"-90\" maxx=\"180\" maxy=\"90\"/>\n"
-            + "      </Layer>\n"
+            + sb
             + "    </Layer>\n"
             + "  </Capability>\n"
             + "</WMS_Capabilities>\n";

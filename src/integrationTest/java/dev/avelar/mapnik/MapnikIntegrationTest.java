@@ -31,6 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 class MapnikIntegrationTest {
     private static final int RED = 0xFFFF0000;
     private static final int WHITE = 0xFFFFFFFF;
+    private static final int BLUE = 0xFF0000FF;
 
     @TempDir
     static Path dir;
@@ -40,7 +41,7 @@ class MapnikIntegrationTest {
         String plugins = System.getProperty("mapnik.input.plugins");
         assertNotNull(plugins, "mapnik.input.plugins system property not set");
         Mapnik.registerDatasources(plugins);
-        for (String f : new String[] {"square.xml", "square.geojson", "missing-data.xml"}) {
+        for (String f : new String[] {"square.xml", "square.geojson", "missing-data.xml", "two-layers.xml", "small.geojson"}) {
             copyResource(f, dir.resolve(f));
         }
     }
@@ -201,6 +202,137 @@ class MapnikIntegrationTest {
             }
         } finally {
             pool.shutdownNow();
+        }
+    }
+
+    // ---------------------------------------------------------------- projection
+
+    @Test
+    void srsComesFromTheStyle() {
+        try (MapnikMap map = squareMap(10, 10)) {
+            assertEquals("epsg:4326", map.srs());
+        }
+    }
+
+    @Test
+    void setSrsReprojectsLayersWhenRendering() throws IOException {
+        try (MapnikMap map = new MapnikMap(400, 400)) {
+            map.load(dir.resolve("square.xml")).setSrs("epsg:3857");
+            assertEquals("epsg:3857", map.srs());
+            // Whole web-mercator world. The +-10 degree square is about +-1.1e6 m,
+            // so it covers pixels ~189..211 here, not the 50..149 it covers in the 4326 tests.
+            map.zoomToBox(-20037508, -20037508, 20037508, 20037508);
+            BufferedImage img = decode(map.renderToPng());
+            assertEquals(RED, img.getRGB(200, 200));
+            assertEquals(RED, img.getRGB(192, 192));
+            assertEquals(WHITE, img.getRGB(180, 200));
+            assertEquals(WHITE, img.getRGB(220, 200));
+            assertEquals(WHITE, img.getRGB(100, 100));
+        }
+    }
+
+    @Test
+    void zoomExtentIsInTheMapProjection() throws IOException {
+        // +-2226390 m is about +-20 degrees of longitude, so the +-10 degree square
+        // covers half the frame: pixels 50..149, as in the 4326 tests.
+        try (MapnikMap map = new MapnikMap(200, 200)) {
+            map.load(dir.resolve("square.xml")).setSrs("epsg:3857");
+            map.zoomToBox(-2226390, -2226390, 2226390, 2226390);
+            BufferedImage img = decode(map.renderToPng());
+            assertEquals(RED, img.getRGB(100, 100));
+            assertEquals(RED, img.getRGB(60, 60));
+            assertEquals(RED, img.getRGB(140, 140));
+            assertEquals(WHITE, img.getRGB(40, 100));
+            assertEquals(WHITE, img.getRGB(100, 40));
+        }
+    }
+
+    @Test
+    void invalidSrsFailsWhenRendering() {
+        try (MapnikMap map = squareMap(10, 10)) {
+            map.setSrs("+proj=nonsense");
+            assertThrows(MapnikException.class, map::renderToPng);
+        }
+    }
+
+    // ---------------------------------------------------------------- layers
+
+    private static MapnikMap twoLayerMap() {
+        MapnikMap map = new MapnikMap(200, 200);
+        try {
+            return map.load(dir.resolve("two-layers.xml")).zoomToBox(-20, -20, 20, 20);
+        } catch (RuntimeException e) {
+            map.close();
+            throw e;
+        }
+    }
+
+    @Test
+    void layerNamesAreInDrawingOrder() {
+        try (MapnikMap map = twoLayerMap()) {
+            assertEquals(Arrays.asList("big", "small"), map.layerNames());
+            assertTrue(map.isLayerActive("big"));
+            assertTrue(map.isLayerActive("small"));
+        }
+    }
+
+    @Test
+    void allLayersDrawByDefaultWithLaterOnTop() throws IOException {
+        try (MapnikMap map = twoLayerMap()) {
+            BufferedImage img = decode(map.renderToPng());
+            assertEquals(BLUE, img.getRGB(100, 100), "small is drawn over big");
+            assertEquals(RED, img.getRGB(60, 60), "big shows around small");
+        }
+    }
+
+    @Test
+    void deactivatingALayerHidesIt() throws IOException {
+        try (MapnikMap map = twoLayerMap()) {
+            map.setLayerActive("small", false);
+            assertFalse(map.isLayerActive("small"));
+            BufferedImage img = decode(map.renderToPng());
+            assertEquals(RED, img.getRGB(100, 100));
+
+            map.setLayerActive("small", true).setLayerActive("big", false);
+            img = decode(map.renderToPng());
+            assertEquals(BLUE, img.getRGB(100, 100));
+            assertEquals(WHITE, img.getRGB(60, 60));
+        }
+    }
+
+    @Test
+    void setActiveLayersKeepsOnlyTheNamedOnes() throws IOException {
+        try (MapnikMap map = twoLayerMap()) {
+            map.setActiveLayers(Arrays.asList("big"));
+            assertTrue(map.isLayerActive("big"));
+            assertFalse(map.isLayerActive("small"));
+            assertEquals(RED, decode(map.renderToPng()).getRGB(100, 100));
+
+            map.setActiveLayers(Arrays.<String>asList());
+            assertEquals(WHITE, decode(map.renderToPng()).getRGB(100, 100));
+
+            map.activateAllLayers();
+            assertEquals(BLUE, decode(map.renderToPng()).getRGB(100, 100));
+        }
+    }
+
+    @Test
+    void setActiveLayersIgnoresRequestOrder() throws IOException {
+        try (MapnikMap map = twoLayerMap()) {
+            map.setActiveLayers(Arrays.asList("small", "big"));
+            assertEquals(BLUE, decode(map.renderToPng()).getRGB(100, 100), "style order still wins");
+        }
+    }
+
+    @Test
+    void unknownLayerIsRejectedAndChangesNothing() {
+        try (MapnikMap map = twoLayerMap()) {
+            assertThrows(IllegalArgumentException.class, () -> map.setLayerActive("nope", false));
+            assertThrows(IllegalArgumentException.class, () -> map.isLayerActive("nope"));
+            assertThrows(IllegalArgumentException.class,
+                () -> map.setActiveLayers(Arrays.asList("big", "nope")));
+            assertTrue(map.isLayerActive("big"));
+            assertTrue(map.isLayerActive("small"));
         }
     }
 

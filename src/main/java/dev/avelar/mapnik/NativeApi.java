@@ -22,6 +22,14 @@ interface NativeApi extends Library {
     void mapnik_map_zoom_to_box(Pointer map, double minx, double miny, double maxx, double maxy);
     void mapnik_map_zoom_all(Pointer map);
 
+    String mapnik_map_get_srs(Pointer map);
+    int mapnik_map_set_srs(Pointer map, String srs);
+
+    int mapnik_map_layer_count(Pointer map);
+    String mapnik_map_layer_name(Pointer map, int index);
+    int mapnik_map_layer_active(Pointer map, int index);
+    int mapnik_map_set_layer_active(Pointer map, int index, int active);
+
     int mapnik_map_render_to_file(Pointer map, String path, String format);
     int mapnik_map_render_to_buffer(Pointer map, String format, PointerByReference out, IntByReference len);
     void mapnik_buffer_free(Pointer buf);

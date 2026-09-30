@@ -6,6 +6,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/image.hpp>
 #include <mapnik/image_util.hpp>
+#include <mapnik/layer.hpp>
 #include <mapnik/load_map.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/version.hpp>
@@ -22,6 +23,7 @@ struct mapnik_map {
 
 namespace {
 thread_local std::string g_error;
+thread_local std::string g_text;  // backing store for returned const char*
 
 template <typename F>
 int guarded(F&& f) {
@@ -68,6 +70,37 @@ int mapnik_map_load(mapnik_map_t* m, const char* path) {
 
 int mapnik_map_load_string(mapnik_map_t* m, const char* xml, const char* base) {
     return guarded([&] { mapnik::load_map_string(m->map, xml, false, base ? base : ""); });
+}
+
+const char* mapnik_map_get_srs(mapnik_map_t* m) {
+    g_text = m->map.srs();
+    return g_text.c_str();
+}
+
+int mapnik_map_set_srs(mapnik_map_t* m, const char* srs) {
+    return guarded([&] { m->map.set_srs(srs); });
+}
+
+int mapnik_map_layer_count(mapnik_map_t* m) { return static_cast<int>(m->map.layer_count()); }
+
+const char* mapnik_map_layer_name(mapnik_map_t* m, int index) {
+    if (index < 0 || static_cast<size_t>(index) >= m->map.layer_count()) return nullptr;
+    g_text = m->map.get_layer(static_cast<size_t>(index)).name();
+    return g_text.c_str();
+}
+
+int mapnik_map_layer_active(mapnik_map_t* m, int index) {
+    if (index < 0 || static_cast<size_t>(index) >= m->map.layer_count()) return -1;
+    return m->map.get_layer(static_cast<size_t>(index)).active() ? 1 : 0;
+}
+
+int mapnik_map_set_layer_active(mapnik_map_t* m, int index, int active) {
+    if (index < 0 || static_cast<size_t>(index) >= m->map.layer_count()) {
+        g_error = "layer index out of range";
+        return -1;
+    }
+    m->map.get_layer(static_cast<size_t>(index)).set_active(active != 0);
+    return 0;
 }
 
 void mapnik_map_resize(mapnik_map_t* m, int w, int h) { m->map.resize(w, h); }

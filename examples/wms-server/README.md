@@ -22,30 +22,30 @@ cd examples/wms-server
 ```bash
 curl "http://localhost:8080/wms?SERVICE=WMS&REQUEST=GetCapabilities"
 
-curl -o map.png "http://localhost:8080/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=world&STYLES=&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=800&HEIGHT=400&FORMAT=image/png"
+curl -o map.png "http://localhost:8080/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=land,route&STYLES=&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=800&HEIGHT=400&FORMAT=image/png"
 ```
 
 It also works with WMS clients. For example, GDAL:
 
 ```bash
-gdal_translate -of PNG "WMS:http://localhost:8080/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=world&CRS=EPSG:4326&BBOX=-90,-180,90,180&FORMAT=image/png" out.png -outsize 400 200
+gdal_translate -of PNG "WMS:http://localhost:8080/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=land,route&CRS=EPSG:4326&BBOX=-90,-180,90,180&FORMAT=image/png" out.png -outsize 400 200
 ```
 
 ## What it supports
 
 - Versions 1.1.1 (`SRS`) and 1.3.0 (`CRS`).
 - Requests: `GetCapabilities` and `GetMap`. Anything else returns `OperationNotSupported`.
-- One layer, `world` (two polygons and a line from GeoJSON).
-- CRS `EPSG:4326` and `CRS:84`. Axis order follows the spec: with 1.3.0 and `EPSG:4326` the `BBOX` is `miny,minx,maxy,maxx`; with `CRS:84` or 1.1.1 it is `minx,miny,maxx,maxy`.
+- Two layers, `land` and `route`, read from the bundled style with `MapnikMap.layerNames()`. `LAYERS` picks any subset (`MapnikMap.setActiveLayers`). Names are case-sensitive.
+- CRS `EPSG:4326`, `CRS:84` and `EPSG:3857`, applied with `MapnikMap.setSrs`. The data is stored in EPSG:4326 and Mapnik reprojects it. Axis order follows the spec: with 1.3.0 and `EPSG:4326` the `BBOX` is `miny,minx,maxy,maxx`; with `CRS:84`, `EPSG:3857` or 1.1.1 it is `x,y`.
 - Formats `image/png` and `image/jpeg`. Sizes up to 4096.
 - Parameter names are case-insensitive.
 - Errors are OGC `ServiceExceptionReport` XML with HTTP 400.
 
 ## Limits
 
-- Other CRSs, such as `EPSG:3857`, are rejected. The wrapper does not yet expose setting the map projection.
+- Other CRSs are rejected. Any PROJ-known CRS would work in the wrapper, but each one needs its own axis-order rule and capabilities entry here.
 - Mapnik widens the requested extent to match the `WIDTH:HEIGHT` ratio. Clients should send a `BBOX` with the same aspect ratio as the image.
-- `LAYERS` accepts only `world`. Picking layers within a style is not wrapped yet.
+- `LAYERS` turns layers on or off. Drawing order is always the style's order, not the order in the request, so a request cannot put `land` above `route`.
 - No `GetFeatureInfo`, no `SLD`, no caching.
 - Each request renders with its own `MapnikMap`, because maps are not thread-safe. A real server would pool them.
 

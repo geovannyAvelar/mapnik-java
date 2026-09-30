@@ -67,7 +67,7 @@ class WmsServerTest {
     }
 
     private static final String MAP_130 =
-        "SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=world&STYLES=&FORMAT=image/png&WIDTH=400&HEIGHT=200";
+        "SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=land,route&STYLES=&FORMAT=image/png&WIDTH=400&HEIGHT=200";
 
     @Test
     void capabilitiesListsTheLayer() throws IOException {
@@ -75,7 +75,9 @@ class WmsServerTest {
         assertEquals(200, r.status);
         assertTrue(r.type.startsWith("text/xml"));
         assertTrue(r.text().contains("<WMS_Capabilities version=\"1.3.0\""));
-        assertTrue(r.text().contains("<Name>world</Name>"));
+        assertTrue(r.text().contains("<Name>land</Name>"));
+        assertTrue(r.text().contains("<Name>route</Name>"));
+        assertTrue(r.text().contains("<CRS>EPSG:3857</CRS>"));
         assertTrue(r.text().contains("image/png"));
         assertTrue(r.text().contains("localhost:" + server.port() + "/wms?"));
     }
@@ -101,7 +103,7 @@ class WmsServerTest {
 
     @Test
     void getMap111UsesSrsAndLonLatAxisOrder() throws IOException {
-        Response r = get("SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=world&FORMAT=image/png"
+        Response r = get("SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=land,route&FORMAT=image/png"
             + "&WIDTH=400&HEIGHT=200&SRS=EPSG:4326&BBOX=-180,-90,180,90");
         assertEquals(200, r.status);
         assertEquals(LAND, r.image().getRGB(161, 100));
@@ -109,7 +111,7 @@ class WmsServerTest {
 
     @Test
     void parameterNamesAreCaseInsensitive() throws IOException {
-        Response r = get("service=WMS&version=1.3.0&request=getmap&layers=world&format=image/png"
+        Response r = get("service=WMS&version=1.3.0&request=getmap&layers=land,route&format=image/png"
             + "&width=50&height=25&crs=epsg:4326&bbox=-90,-180,90,180");
         assertEquals(200, r.status);
         assertEquals(50, r.image().getWidth());
@@ -133,16 +135,84 @@ class WmsServerTest {
         assertEquals((byte) 0xD8, r.body[1]);
     }
 
+    private static final int ROUTE = 0xFFD1322B;
+    private static final String WORLD_4326 = "&CRS=EPSG:4326&BBOX=-90,-180,90,180";
+
+    private static int count(BufferedImage img, int rgb) {
+        int n = 0;
+        for (int y = 0; y < img.getHeight(); y++) {
+            for (int x = 0; x < img.getWidth(); x++) {
+                if (img.getRGB(x, y) == rgb) {
+                    n++;
+                }
+            }
+        }
+        return n;
+    }
+
+    @Test
+    void layersParameterSelectsLayers() throws IOException {
+        BufferedImage both = get(MAP_130 + WORLD_4326).image();
+        assertTrue(count(both, LAND) > 0);
+        assertTrue(count(both, ROUTE) > 0);
+
+        BufferedImage landOnly = get(MAP_130.replace("LAYERS=land,route", "LAYERS=land") + WORLD_4326).image();
+        assertTrue(count(landOnly, LAND) > 0);
+        assertEquals(0, count(landOnly, ROUTE), "route must be off");
+
+        BufferedImage routeOnly = get(MAP_130.replace("LAYERS=land,route", "LAYERS=route") + WORLD_4326).image();
+        assertTrue(count(routeOnly, ROUTE) > 0);
+        assertEquals(0, count(routeOnly, LAND), "land must be off");
+        assertEquals(OCEAN, routeOnly.getRGB(161, 100));
+    }
+
+    @Test
+    void layersAreCaseSensitiveAndRequired() throws IOException {
+        assertTrue(get(MAP_130.replace("LAYERS=land,route", "LAYERS=LAND") + WORLD_4326)
+            .text().contains("LayerNotDefined"));
+        assertTrue(get(MAP_130.replace("LAYERS=land,route", "LAYERS=") + WORLD_4326)
+            .text().contains("MissingParameterValue"));
+        assertTrue(get(MAP_130.replace("LAYERS=land,route", "LAYERS=land,nope") + WORLD_4326)
+            .text().contains("LayerNotDefined"));
+    }
+
+    @Test
+    void getMapInWebMercator() throws IOException {
+        // Whole mercator world in a square image. The western polygon spans lat -30..30,
+        // which mercator stretches to y = +-3.5e6 m, so pixel rows 165..235 at x = 161.
+        Response r = get("SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=land&STYLES=&FORMAT=image/png"
+            + "&WIDTH=400&HEIGHT=400&CRS=EPSG:3857&BBOX=-20037508,-20037508,20037508,20037508");
+        assertEquals(200, r.status);
+        BufferedImage img = r.image();
+        assertEquals(400, img.getWidth());
+        assertEquals(400, img.getHeight());
+        assertEquals(LAND, img.getRGB(161, 200));
+        assertEquals(LAND, img.getRGB(161, 170));
+        assertEquals(OCEAN, img.getRGB(161, 160), "above lat 30 in mercator; it would be land in plate carree");
+        assertEquals(OCEAN, img.getRGB(2, 2));
+    }
+
+    @Test
+    void webMercatorIsXyInBothWmsVersions() throws IOException {
+        // EPSG:3857 is always x,y in both WMS versions (no lat/lon swap).
+        String q = "&LAYERS=land&STYLES=&FORMAT=image/png&WIDTH=400&HEIGHT=400&CRS=EPSG:3857"
+            + "&BBOX=-20037508,-20037508,20037508,20037508";
+        BufferedImage v130 = get("SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap" + q).image();
+        BufferedImage v111 = get("SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" + q.replace("CRS=", "SRS=")).image();
+        assertEquals(v130.getRGB(161, 200), v111.getRGB(161, 200));
+        assertEquals(LAND, v111.getRGB(161, 200));
+    }
+
     @Test
     void unknownLayerIsAServiceException() throws IOException {
-        Response r = get(MAP_130.replace("LAYERS=world", "LAYERS=nope") + "&CRS=EPSG:4326&BBOX=-90,-180,90,180");
+        Response r = get(MAP_130.replace("LAYERS=land,route", "LAYERS=nope") + "&CRS=EPSG:4326&BBOX=-90,-180,90,180");
         assertEquals(400, r.status);
         assertTrue(r.text().contains("code=\"LayerNotDefined\""));
     }
 
     @Test
     void unsupportedCrsIsAServiceException() throws IOException {
-        Response r = get(MAP_130 + "&CRS=EPSG:3857&BBOX=0,0,1,1");
+        Response r = get(MAP_130 + "&CRS=EPSG:32633&BBOX=0,0,1,1");
         assertEquals(400, r.status);
         assertTrue(r.text().contains("code=\"InvalidCRS\""));
     }

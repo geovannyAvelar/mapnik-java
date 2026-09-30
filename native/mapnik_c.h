@@ -22,6 +22,19 @@ void mapnik_map_resize(mapnik_map_t* m, int width, int height);
 void mapnik_map_zoom_to_box(mapnik_map_t* m, double minx, double miny, double maxx, double maxy);
 void mapnik_map_zoom_all(mapnik_map_t* m);
 
+/* Projection. The string is anything Mapnik accepts: "epsg:3857", a PROJ string, ...
+ * get returns a pointer valid until the next call on the same thread. */
+const char* mapnik_map_get_srs(mapnik_map_t* m);
+int         mapnik_map_set_srs(mapnik_map_t* m, const char* srs);
+
+/* Layers, by index in drawing order (first is drawn first, so it is at the bottom).
+ * name returns NULL for a bad index. Same pointer lifetime as get_srs.
+ * active returns 1, 0, or -1 for a bad index. set_active returns 0 or -1. */
+int         mapnik_map_layer_count(mapnik_map_t* m);
+const char* mapnik_map_layer_name(mapnik_map_t* m, int index);
+int         mapnik_map_layer_active(mapnik_map_t* m, int index);
+int         mapnik_map_set_layer_active(mapnik_map_t* m, int index, int active);
+
 /* Render. */
 int  mapnik_map_render_to_file(mapnik_map_t* m, const char* path, const char* format);
 /* Allocates *out. Free with mapnik_buffer_free(). */

@@ -82,12 +82,33 @@ To use the library from your own application, put `libmapnik_c.so` on the JNA se
 java -Djna.library.path=build/native -cp ... YourApp
 ```
 
+### Projection and layers
+
+```java
+try (MapnikMap map = new MapnikMap(512, 512)) {
+    map.load(Paths.get("style.xml"));
+
+    // Layers keep their own projection; Mapnik reprojects them to the map's.
+    map.setSrs("epsg:3857");
+    map.zoomToBox(-20037508, -20037508, 20037508, 20037508);   // extent is in the map's projection
+
+    map.layerNames();                                  // ["land", "route"], in drawing order
+    map.setActiveLayers(Arrays.asList("land"));        // draw only these
+    map.setLayerActive("route", true);                 // or toggle one
+    map.activateAllLayers();
+
+    byte[] png = map.renderToPng();
+}
+```
+
+Set the projection before `zoomToBox`, because the extent is interpreted in the map's projection. An invalid projection string fails when you render, not when you set it. Unknown layer names throw `IllegalArgumentException`.
+
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system.
 
 ## Examples
 
 - `examples/render-demo`: a small app that depends on mapnik-java and renders a map to a PNG.
-- `examples/wms-server`: a minimal WMS 1.1.1 and 1.3.0 server (GetCapabilities and GetMap) built on the wrapper.
+- `examples/wms-server`: a minimal WMS 1.1.1 and 1.3.0 server (GetCapabilities and GetMap, layer selection, EPSG:4326 and EPSG:3857) built on the wrapper.
 
 Both have their own README.
 
@@ -98,7 +119,7 @@ Both have their own README.
 ./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
 ```
 
-Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable if set. They cover rendering a GeoJSON polygon and checking pixels, output formats, zoom and resize, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable if set. They cover rendering a GeoJSON polygon and checking pixels, output formats, zoom and resize, reprojection, layer selection, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 
