@@ -156,13 +156,31 @@ try (Featureset hits = map.queryMapPoint("places", px, py)) { ... }  // a pixel 
 
 A `Featureset` can be read once. Features are snapshots: they stay valid after the set is closed. A map must have an extent (for example from `zoomToBox`) before you query it.
 
+### Projections
+
+```java
+try (CoordinateTransform t = CoordinateTransform.between("epsg:4326", "epsg:3857")) {
+    Point2d m = t.forward(10, 20);                           // lon/lat to web mercator
+    Box2d merc = t.forward(new Box2d(-10, -20, 10, 20));     // a box
+    Box2d safe = t.forward(new Box2d(12, 40, 18, 50), 20);   // sample 20 points per edge for big boxes
+}
+
+try (Projection p = Projection.of("epsg:32633")) {
+    p.isGeographic();
+    p.forward(15, 0);       // lon/lat to this projection
+    p.inverse(500000, 0);   // and back
+}
+```
+
+A point that cannot be projected throws `MapnikException`. Use a `CoordinateTransform` to turn a longitude/latitude box into the extent for `zoomToBox` when the map is in another projection.
+
 Styles are still defined in XML. Creating styles, rules and symbolizers in code is planned (see [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system. A CMake-installed Mapnik has no `mapnik-config`: look under its install prefix (`find <prefix> -name csv.input`) and set `MAPNIK_INPUT_PLUGINS`.
 
 ## Status
 
-The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features and queries work today. Projections, more rendering options and styling in code are planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
+The wrapper covers the core of Mapnik in phases: maps, layers, datasources, features, queries and projections work today. More rendering options and styling in code are planned. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Examples
 

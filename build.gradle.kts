@@ -77,6 +77,9 @@ tasks.register<Test>("integrationTest") {
 tasks.test {
     useJUnitPlatform()
     systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
+    // NativeApiConsistencyTest parses this, so re-run the tests when it changes.
+    inputs.file("native/mapnik_c.h")
+    systemProperty("native.header", file("native/mapnik_c.h").absolutePath)
 }
 
 tasks.processResources {

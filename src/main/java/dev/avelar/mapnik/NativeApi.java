@@ -145,6 +145,24 @@ interface NativeApi extends Library {
     String mapnik_feature_geometry_geojson(Pointer feature);
     String mapnik_feature_to_geojson(Pointer feature);
 
+    // projections
+    Pointer mapnik_projection_create(String params);
+    void mapnik_projection_free(Pointer projection);
+    String mapnik_projection_params(Pointer projection);
+    String mapnik_projection_definition(Pointer projection);
+    String mapnik_projection_description(Pointer projection);
+    int mapnik_projection_is_geographic(Pointer projection);
+    int mapnik_projection_area_of_use(Pointer projection, double[] out);
+    int mapnik_projection_forward(Pointer projection, double[] x, double[] y);
+    int mapnik_projection_inverse(Pointer projection, double[] x, double[] y);
+    Pointer mapnik_transform_create(Pointer source, Pointer dest);
+    void mapnik_transform_free(Pointer transform);
+    int mapnik_transform_is_identity(Pointer transform);
+    int mapnik_transform_forward_point(Pointer transform, double[] x, double[] y);
+    int mapnik_transform_backward_point(Pointer transform, double[] x, double[] y);
+    int mapnik_transform_forward_box(Pointer transform, double[] box, int densifyPoints);
+    int mapnik_transform_backward_box(Pointer transform, double[] box, int densifyPoints);
+
     // render
     int mapnik_map_render_to_file(Pointer map, String path, String format);
     int mapnik_map_render_to_buffer(Pointer map, String format, PointerByReference out, IntByReference len);

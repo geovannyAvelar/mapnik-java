@@ -25,6 +25,8 @@ typedef struct mapnik_params mapnik_params_t;
 typedef struct mapnik_datasource mapnik_datasource_t;
 typedef struct mapnik_featureset mapnik_featureset_t;
 typedef struct mapnik_feature mapnik_feature_t;
+typedef struct mapnik_projection mapnik_projection_t;
+typedef struct mapnik_transform mapnik_transform_t;
 
 /* ---- runtime ------------------------------------------------------------------------------ */
 
@@ -221,6 +223,33 @@ const char* mapnik_feature_geometry_wkt(mapnik_feature_t* f);
 const char* mapnik_feature_geometry_geojson(mapnik_feature_t* f);
 /* The whole feature (geometry and attributes) as a GeoJSON Feature. NULL on error. */
 const char* mapnik_feature_to_geojson(mapnik_feature_t* f);
+
+/* ---- projections -------------------------------------------------------------------------- */
+
+/* params is anything Mapnik accepts: "epsg:3857", "+proj=utm +zone=33 ...". NULL on error. */
+mapnik_projection_t* mapnik_projection_create(const char* params);
+void                 mapnik_projection_free(mapnik_projection_t* p);
+
+const char* mapnik_projection_params(mapnik_projection_t* p);
+const char* mapnik_projection_definition(mapnik_projection_t* p);
+const char* mapnik_projection_description(mapnik_projection_t* p);
+int         mapnik_projection_is_geographic(mapnik_projection_t* p);
+/* Returns 1 and fills out if the area of use is known, else 0. */
+int         mapnik_projection_area_of_use(mapnik_projection_t* p, double* out);
+/* In place. forward: geographic (lon, lat) to projected; inverse: projected to geographic. */
+int         mapnik_projection_forward(mapnik_projection_t* p, double* x, double* y);
+int         mapnik_projection_inverse(mapnik_projection_t* p, double* x, double* y);
+
+/* A transform between two projections. The projections are copied; free yours independently. */
+mapnik_transform_t* mapnik_transform_create(mapnik_projection_t* source, mapnik_projection_t* dest);
+void                mapnik_transform_free(mapnik_transform_t* t);
+int                 mapnik_transform_is_identity(mapnik_transform_t* t);
+/* In place. forward: source to destination; backward: destination to source. 0 ok, -1 failed. */
+int                 mapnik_transform_forward_point(mapnik_transform_t* t, double* x, double* y);
+int                 mapnik_transform_backward_point(mapnik_transform_t* t, double* x, double* y);
+/* box is double[4], in place. densify_points > 0 also samples that many points along each edge. */
+int                 mapnik_transform_forward_box(mapnik_transform_t* t, double* box, int densify_points);
+int                 mapnik_transform_backward_box(mapnik_transform_t* t, double* box, int densify_points);
 
 /* ---- render ------------------------------------------------------------------------------- */
 

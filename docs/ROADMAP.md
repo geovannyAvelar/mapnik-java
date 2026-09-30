@@ -28,10 +28,17 @@ check real output, such as pixels and XML.
 - WKT and GeoJSON are written by the shim itself. Mapnik's own writers live in static libraries that
   are tied to the ICU version Mapnik was built with.
 
-## Phase 3: projections and geometry
+## Phase 3: projections (done)
 
-- `Projection` and forward and backward transforms of points and boxes.
-- Parse and write WKT, WKB and GeoJSON geometries.
+- `Projection`: definition, description, geographic or not, area of use, and conversion between
+  longitude/latitude and projected coordinates.
+- `CoordinateTransform`: points and boxes between any two projections, in both directions, with
+  optional edge sampling for boxes.
+- `Point2d`. Points that cannot be projected, such as the far side of an orthographic projection,
+  raise `MapnikException` instead of returning infinity.
+- Not done: parsing WKT, WKB and GeoJSON into Mapnik geometries. Mapnik's parsers are in static
+  libraries tied to the ICU version Mapnik was built with, so they are not safe to link into the
+  shim. Geometry output (WKT and GeoJSON) is done, in phase 2.
 
 ## Phase 4: rendering
 
