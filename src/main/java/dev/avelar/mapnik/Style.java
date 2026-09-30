@@ -35,6 +35,28 @@ public final class Style {
         return new Style(name);
     }
 
+    /** A style as read from XML. */
+    static Style fromParts(String name, Map<String, String> attributes, List<Rule> rules) {
+        Style s = new Style(name);
+        s.attributes.putAll(attributes);
+        s.rules.addAll(rules);
+        return s;
+    }
+
+    /**
+     * Read a style from its XML, such as one {@link #toXml()} wrote or one taken from a Mapnik map file.
+     * Throws {@link IllegalArgumentException} if the text is not a well-formed {@code <Style>} element.
+     * DTDs are refused.
+     */
+    public static Style fromXml(String xml) {
+        return StyleReader.parseStyle(xml);
+    }
+
+    /** The style's own attributes, such as {@code opacity} and {@code comp-op}, as written. */
+    public Map<String, String> attributes() {
+        return Collections.unmodifiableMap(attributes);
+    }
+
     public String name() { return name; }
 
     /** Opacity of everything drawn by this style, from 0 to 1. */

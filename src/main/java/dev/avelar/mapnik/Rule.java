@@ -91,6 +91,36 @@ public final class Rule {
         return this;
     }
 
+    /** A rule as read from XML. */
+    static Rule fromParts(String name, String title, String filter, boolean elseFilter, boolean alsoFilter,
+                          Double minScale, Double maxScale, List<Symbolizer> symbolizers) {
+        Rule r = new Rule();
+        r.name = name;
+        r.title = title;
+        r.filter = filter;
+        r.elseFilter = elseFilter;
+        r.alsoFilter = alsoFilter;
+        r.minScaleDenominator = minScale;
+        r.maxScaleDenominator = maxScale;
+        r.symbolizers.addAll(symbolizers);
+        return r;
+    }
+
+    public java.util.Optional<String> name() { return java.util.Optional.ofNullable(name); }
+
+    public java.util.Optional<String> title() { return java.util.Optional.ofNullable(title); }
+
+    /** The filter expression, if the rule has one. */
+    public java.util.Optional<String> filterExpression() { return java.util.Optional.ofNullable(filter); }
+
+    public boolean isElse() { return elseFilter; }
+
+    public boolean isAlso() { return alsoFilter; }
+
+    public java.util.Optional<Double> minScale() { return java.util.Optional.ofNullable(minScaleDenominator); }
+
+    public java.util.Optional<Double> maxScale() { return java.util.Optional.ofNullable(maxScaleDenominator); }
+
     public List<Symbolizer> symbolizers() {
         return Collections.unmodifiableList(symbolizers);
     }

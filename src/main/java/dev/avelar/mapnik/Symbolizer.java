@@ -177,6 +177,30 @@ public final class Symbolizer {
 
     // ---------------------------------------------------------------- output
 
+    /** A symbolizer of any kind, as read from XML. */
+    static Symbolizer fromParts(String element, Map<String, String> attributes, String body, java.util.List<String> children) {
+        Symbolizer s = new Symbolizer(element);
+        s.attributes.putAll(attributes);
+        s.body = body;
+        s.children.addAll(children);
+        return s;
+    }
+
+    /** One attribute's value, or empty if it is not set. */
+    public java.util.Optional<String> attribute(String name) {
+        return java.util.Optional.ofNullable(attributes.get(name));
+    }
+
+    /** The text inside the element, such as the expression of a text symbolizer, if it has any. */
+    public java.util.Optional<String> body() {
+        return java.util.Optional.ofNullable(body);
+    }
+
+    /** Nested elements as XML text, in order. */
+    public java.util.List<String> children() {
+        return Collections.unmodifiableList(children);
+    }
+
     /** The element name, for example {@code PolygonSymbolizer}. */
     public String element() { return element; }
 

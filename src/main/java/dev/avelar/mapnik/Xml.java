@@ -38,7 +38,7 @@ final class Xml {
     }
 
     static void checkName(String kind, String name) {
-        if (name == null || !name.matches("[a-zA-Z][a-zA-Z0-9_-]*")) {
+        if (name == null || !name.matches("\\p{L}[\\p{L}\\p{N}_-]*")) {
             throw new IllegalArgumentException(kind + " name must be letters, digits, '-' or '_': " + name);
         }
     }

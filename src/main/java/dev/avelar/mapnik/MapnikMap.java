@@ -525,6 +525,26 @@ public final class MapnikMap implements AutoCloseable {
         return Collections.unmodifiableList(out);
     }
 
+    /**
+     * The styles in the map as objects, read back from the map's XML: the ones you added in code, and
+     * the ones a loaded style file defined. Mapnik writes values in its own spelling, for example
+     * colours as {@code rgb(255,0,0)} and filters in parentheses, and leaves out attributes that are at
+     * their default. Adding a style read back with {@link #addStyle} to another map draws the same.
+     */
+    public List<Style> styles() {
+        return Collections.unmodifiableList(StyleReader.stylesOf(toXml()));
+    }
+
+    /** One style by name, read back as in {@link #styles()}, or empty if the map has none of that name. */
+    public Optional<Style> style(String name) {
+        for (Style s : StyleReader.stylesOf(toXml())) {
+            if (s.name().equals(name)) {
+                return Optional.of(s);
+            }
+        }
+        return Optional.empty();
+    }
+
     public MapnikMap removeStyle(String name) {
         N.mapnik_map_remove_style(ptr(), name);
         return this;
