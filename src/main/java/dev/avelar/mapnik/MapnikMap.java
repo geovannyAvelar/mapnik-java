@@ -614,6 +614,86 @@ public final class MapnikMap implements AutoCloseable {
         return this;
     }
 
+    // ------------------------------------------------------------------ tiles and layer subsets
+
+    /**
+     * Render one tile of the standard web map grid (see {@link Tiles}) as an image the size of the map,
+     * which must be square: its width is the tile size, usually 256 or 512. The map is put in Web
+     * Mercator for the render and then restored, including its projection, extent, size, aspect mode
+     * and buffer size, so you can keep using it. Close the result.
+     *
+     * <p>{@code buffer} is a metatile margin in pixels: Mapnik draws a bigger picture that extends that
+     * far past the tile on every side and the margin is then cropped off, so that labels and wide
+     * lines that cross a tile edge match in the neighbouring tile. 0 draws the tile alone.
+     */
+    public Image renderTile(Tiles.Tile tile, int buffer) {
+        if (buffer < 0) {
+            throw new IllegalArgumentException("buffer must not be negative: " + buffer);
+        }
+        int size = width();
+        if (size != height()) {
+            throw new IllegalStateException("a tile map must be square, but this one is " + size + "x" + height());
+        }
+        String oldSrs = srs();
+        AspectFixMode oldAspect = aspectFixMode();
+        int oldBuffer = bufferSize();
+        Box2d oldExtent = extent();
+        try {
+            Box2d b = tile.bounds();
+            double metresPerPixel = b.width() / size;
+            double grow = buffer * metresPerPixel;
+            setSrs("epsg:3857").setAspectFixMode(AspectFixMode.RESPECT).setBufferSize(0);
+            resize(size + 2 * buffer, size + 2 * buffer);
+            zoomToBox(b.minX() - grow, b.minY() - grow, b.maxX() + grow, b.maxY() + grow);
+            try (Image whole = renderToImage()) {
+                return buffer == 0 ? whole.copy() : whole.crop(buffer, buffer, size, size);
+            }
+        } finally {
+            resize(size, size);
+            setSrs(oldSrs).setAspectFixMode(oldAspect).setBufferSize(oldBuffer);
+            try {
+                if (oldExtent.width() > 0 && oldExtent.height() > 0) {
+                    setAspectFixMode(AspectFixMode.RESPECT).zoomToBox(oldExtent).setAspectFixMode(oldAspect);
+                }
+            } catch (MapnikException ignored) {
+                // the map had no usable extent to restore
+            }
+        }
+    }
+
+    public Image renderTile(int z, int x, int y, int buffer) {
+        return renderTile(new Tiles.Tile(z, x, y), buffer);
+    }
+
+    /** A tile encoded as {@code png}, {@code jpeg} and so on, as for {@link #renderToBytes}. */
+    public byte[] renderTileToBytes(Tiles.Tile tile, String format, int buffer) {
+        try (Image img = renderTile(tile, buffer)) {
+            return img.toBytes(format);
+        }
+    }
+
+    /**
+     * Render only the named layers, then put every layer's active flag back as it was. Drawing order
+     * is the style's, not the order of {@code names}. Throws {@link IllegalArgumentException} for an
+     * unknown name. Close the result.
+     */
+    public Image renderLayers(Collection<String> names) {
+        List<Layer> all = layers();
+        List<Boolean> before = new ArrayList<>();
+        for (Layer l : all) {
+            before.add(l.isActive());
+        }
+        setActiveLayers(names);
+        try {
+            return renderToImage();
+        } finally {
+            List<Layer> fresh = layers();
+            for (int i = 0; i < fresh.size(); i++) {
+                fresh.get(i).setActive(before.get(i));
+            }
+        }
+    }
+
     private static boolean isVector(String format) {
         String f = format.toLowerCase(Locale.ROOT);
         return f.equals("pdf") || f.equals("svg") || f.equals("ps");
