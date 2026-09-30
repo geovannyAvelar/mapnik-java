@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="epsg:4326" background-color="white">
+  <Style name="fill">
+    <Rule>
+      <PolygonSymbolizer fill="red"/>
+    </Rule>
+  </Style>
+  <Layer name="square" srs="epsg:4326">
+    <StyleName>fill</StyleName>
+    <Datasource>
+      <Parameter name="type">geojson</Parameter>
+      <Parameter name="file">square.geojson</Parameter>
+    </Datasource>
+  </Layer>
+</Map>

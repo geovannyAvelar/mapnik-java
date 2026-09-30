@@ -84,6 +84,17 @@ java -Djna.library.path=build/native -cp ... YourApp
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system.
 
+## Testing
+
+```bash
+./gradlew test             # unit tests; skip if libmapnik_c is missing
+./gradlew integrationTest  # renders real data through Mapnik; fails if Mapnik is missing
+```
+
+Build the shim first. Integration tests register the input plugins from `mapnik-config --input-plugins`, or from the `MAPNIK_INPUT_PLUGINS` environment variable if set. They cover rendering a GeoJSON polygon and checking pixels, output formats, zoom and resize, error handling, recovery after a failed render, and concurrent rendering with one map per thread.
+
+The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
+
 ## Notes
 
 - `MapnikMap` is not thread-safe. Use one instance per thread, or a pool.

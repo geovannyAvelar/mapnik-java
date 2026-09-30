@@ -31,9 +31,40 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-// The C shim is built separately with CMake (see README). Tests skip when the
+// The C shim is built separately with CMake (see README). Unit tests skip when the
 // shared library is not found.
 val nativeDir = layout.buildDirectory.dir("native")
+
+// Integration tests run against a real Mapnik install and fail if it is missing.
+// Run: ./gradlew integrationTest   (build the shim first)
+val integrationTest by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().output
+}
+
+configurations[integrationTest.implementationConfigurationName].extendsFrom(configurations.testImplementation.get())
+configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configurations.testRuntimeOnly.get())
+
+val mapnikInputPlugins = providers.environmentVariable("MAPNIK_INPUT_PLUGINS").orElse(
+    providers.exec {
+        commandLine("mapnik-config", "--input-plugins")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.map { it.trim() }
+)
+
+tasks.register<Test>("integrationTest") {
+    description = "Runs integration tests against a real Mapnik install."
+    group = "verification"
+    testClassesDirs = integrationTest.output.classesDirs
+    classpath = integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
+    systemProperty("mapnik.input.plugins", mapnikInputPlugins.get())
+    testLogging {
+        events("passed", "failed", "skipped")
+        showStandardStreams = true
+    }
+}
 
 tasks.test {
     useJUnitPlatform()
