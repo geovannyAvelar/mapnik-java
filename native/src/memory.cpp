@@ -11,12 +11,16 @@
 #include <optional>
 #include <stdexcept>
 
-struct mapnik_feature_builder {
-    long long id;
-    std::optional<mapnik::geometry::geometry<double>> geometry;
-    // name -> value; ordered, and a repeated name replaces the earlier one
-    std::map<std::string, mapnik::value> attributes;
-};
+namespace mc {
+mapnik::feature_ptr build_feature(mapnik_feature_builder_t* b) {
+    auto ctx = std::make_shared<mapnik::context_type>();
+    for (auto const& kv : b->attributes) ctx->push(kv.first);
+    mapnik::feature_ptr f = mapnik::feature_factory::create(ctx, static_cast<mapnik::value_integer>(b->id));
+    for (auto const& kv : b->attributes) f->put(kv.first, mapnik::value(kv.second));
+    if (b->geometry) f->set_geometry_copy(*b->geometry);
+    return f;
+}
+}  // namespace mc
 
 using namespace mc;
 
@@ -62,6 +66,24 @@ void mapnik_feature_builder_put_bool(mapnik_feature_builder_t* b, const char* ke
     b->attributes[key] = mapnik::value(static_cast<mapnik::value_bool>(value != 0));
 }
 
+// Variables are what @name refers to in an expression. They are not attributes of the feature.
+void mapnik_feature_builder_put_var_null(mapnik_feature_builder_t* b, const char* key) {
+    b->variables[key] = mapnik::value();
+}
+void mapnik_feature_builder_put_var_string(mapnik_feature_builder_t* b, const char* key, const char* value) {
+    static const mapnik::transcoder utf8("utf-8");
+    b->variables[key] = mapnik::value(utf8.transcode(value));
+}
+void mapnik_feature_builder_put_var_int(mapnik_feature_builder_t* b, const char* key, long long value) {
+    b->variables[key] = mapnik::value(static_cast<mapnik::value_integer>(value));
+}
+void mapnik_feature_builder_put_var_double(mapnik_feature_builder_t* b, const char* key, double value) {
+    b->variables[key] = mapnik::value(value);
+}
+void mapnik_feature_builder_put_var_bool(mapnik_feature_builder_t* b, const char* key, int value) {
+    b->variables[key] = mapnik::value(static_cast<mapnik::value_bool>(value != 0));
+}
+
 mapnik_datasource_t* mapnik_memory_datasource_create(void) {
     mapnik_datasource_t* out = nullptr;
     guarded([&] {
@@ -82,12 +104,7 @@ mapnik::memory_datasource& memory(mapnik_datasource_t* ds) {
 
 int mapnik_memory_datasource_push(mapnik_datasource_t* ds, mapnik_feature_builder_t* b) {
     return guarded([&] {
-        auto ctx = std::make_shared<mapnik::context_type>();
-        for (auto const& kv : b->attributes) ctx->push(kv.first);
-        mapnik::feature_ptr f = mapnik::feature_factory::create(ctx, static_cast<mapnik::value_integer>(b->id));
-        for (auto const& kv : b->attributes) f->put(kv.first, mapnik::value(kv.second));
-        if (b->geometry) f->set_geometry_copy(*b->geometry);
-        memory(ds).push(f);
+        memory(ds).push(mc::build_feature(b));
     });
 }
 

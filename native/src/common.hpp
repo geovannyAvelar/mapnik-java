@@ -13,6 +13,10 @@
 #include <mapnik/proj_transform.hpp>
 
 #include <exception>
+#include <map>
+#include <optional>
+#include <mapnik/geometry.hpp>
+#include <mapnik/value.hpp>
 #include <memory>
 #include <string>
 #include <utility>
@@ -21,6 +25,15 @@
 struct mapnik_map {
     mapnik::Map map;
     mapnik_map(int w, int h) : map(w, h) {}
+};
+
+struct mapnik_feature_builder {
+    long long id;
+    std::optional<mapnik::geometry::geometry<double>> geometry;
+    // name -> value; ordered, and a repeated name replaces the earlier one
+    std::map<std::string, mapnik::value> attributes;
+    // what @name means in an expression
+    std::map<std::string, mapnik::value> variables;
 };
 
 struct mapnik_params {
@@ -53,6 +66,9 @@ extern thread_local std::string g_text;  // backing store for returned const cha
 // mapnik_layer_t is really a mapnik::layer; it is never defined in C++.
 inline mapnik::layer& L(mapnik_layer_t* l) { return *reinterpret_cast<mapnik::layer*>(l); }
 inline mapnik_layer_t* H(mapnik::layer* l) { return reinterpret_cast<mapnik_layer_t*>(l); }
+
+// Turn a builder into a real Mapnik feature.
+mapnik::feature_ptr build_feature(mapnik_feature_builder_t* b);
 
 template <typename F>
 int guarded(F&& f) {

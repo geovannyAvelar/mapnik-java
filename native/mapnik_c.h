@@ -29,6 +29,9 @@ typedef struct mapnik_projection mapnik_projection_t;
 typedef struct mapnik_transform mapnik_transform_t;
 typedef struct mapnik_image mapnik_image_t;
 typedef struct mapnik_feature_builder mapnik_feature_builder_t;
+typedef struct mapnik_expression mapnik_expression_t;
+typedef struct mapnik_path_expression mapnik_path_expression_t;
+typedef struct mapnik_value mapnik_value_t;
 
 /* ---- runtime ------------------------------------------------------------------------------ */
 
@@ -329,6 +332,13 @@ void mapnik_feature_builder_put_int(mapnik_feature_builder_t* b, const char* key
 void mapnik_feature_builder_put_double(mapnik_feature_builder_t* b, const char* key, double value);
 void mapnik_feature_builder_put_bool(mapnik_feature_builder_t* b, const char* key, int value);
 
+/* Variables are what @name means in an expression. They are not attributes of the feature. */
+void mapnik_feature_builder_put_var_null(mapnik_feature_builder_t* b, const char* key);
+void mapnik_feature_builder_put_var_string(mapnik_feature_builder_t* b, const char* key, const char* value);
+void mapnik_feature_builder_put_var_int(mapnik_feature_builder_t* b, const char* key, long long value);
+void mapnik_feature_builder_put_var_double(mapnik_feature_builder_t* b, const char* key, double value);
+void mapnik_feature_builder_put_var_bool(mapnik_feature_builder_t* b, const char* key, int value);
+
 /* A datasource that holds features in memory. NULL on error. Use it like any datasource. */
 mapnik_datasource_t* mapnik_memory_datasource_create(void);
 /* Copies the feature out of the builder. The builder can be reused or freed. */
@@ -336,6 +346,35 @@ int  mapnik_memory_datasource_push(mapnik_datasource_t* ds, mapnik_feature_build
 int  mapnik_memory_datasource_size(mapnik_datasource_t* ds);
 void mapnik_memory_datasource_clear(mapnik_datasource_t* ds);
 void mapnik_memory_datasource_set_envelope(mapnik_datasource_t* ds, double minx, double miny, double maxx, double maxy);
+
+/* ---- expressions ---------------------------------------------------------------------------- */
+
+/* Mapnik's expression language, as used in filters: "[population] > 1000 and [kind] = 'city'".
+ * parse returns NULL on a syntax error, with Mapnik's message in mapnik_last_error(). */
+mapnik_expression_t* mapnik_expression_parse(const char* text);
+void                 mapnik_expression_free(mapnik_expression_t* e);
+/* Evaluate against a feature and variables held by a builder. NULL on error. Free with mapnik_value_free. */
+mapnik_value_t*      mapnik_expression_evaluate(mapnik_expression_t* e, mapnik_feature_builder_t* b);
+/* 1 if the result is true (as a filter sees it), 0 if false, -1 on error. */
+int                  mapnik_expression_test(mapnik_expression_t* e, mapnik_feature_builder_t* b);
+
+void        mapnik_value_free(mapnik_value_t* v);
+/* 0 null, 1 boolean, 2 integer, 3 double, 4 string. */
+int         mapnik_value_type(mapnik_value_t* v);
+int         mapnik_value_bool(mapnik_value_t* v);
+long long   mapnik_value_int(mapnik_value_t* v);
+double      mapnik_value_double(mapnik_value_t* v);
+const char* mapnik_value_string(mapnik_value_t* v);
+
+/* A text pattern with attributes in brackets, such as "icons/[type].png". */
+mapnik_path_expression_t* mapnik_path_expression_parse(const char* text);
+void                      mapnik_path_expression_free(mapnik_path_expression_t* p);
+/* NULL on error. */
+const char*               mapnik_path_expression_evaluate(mapnik_path_expression_t* p, mapnik_feature_builder_t* b);
+
+/* Check that an SVG-style transform such as "translate(10,20) rotate(45)" parses. 0 if it does, -1 if not,
+ * with Mapnik's message in mapnik_last_error(). */
+int mapnik_transform_check(const char* text);
 
 /* ---- geometry operations -------------------------------------------------------------------- */
 

@@ -207,11 +207,32 @@ interface NativeApi extends Library {
     void mapnik_feature_builder_put_int(Pointer builder, String key, long value);
     void mapnik_feature_builder_put_double(Pointer builder, String key, double value);
     void mapnik_feature_builder_put_bool(Pointer builder, String key, int value);
+    void mapnik_feature_builder_put_var_null(Pointer builder, String key);
+    void mapnik_feature_builder_put_var_string(Pointer builder, String key, String value);
+    void mapnik_feature_builder_put_var_int(Pointer builder, String key, long value);
+    void mapnik_feature_builder_put_var_double(Pointer builder, String key, double value);
+    void mapnik_feature_builder_put_var_bool(Pointer builder, String key, int value);
     Pointer mapnik_memory_datasource_create();
     int mapnik_memory_datasource_push(Pointer datasource, Pointer builder);
     int mapnik_memory_datasource_size(Pointer datasource);
     void mapnik_memory_datasource_clear(Pointer datasource);
     void mapnik_memory_datasource_set_envelope(Pointer datasource, double minx, double miny, double maxx, double maxy);
+
+    // expressions
+    Pointer mapnik_expression_parse(String text);
+    void mapnik_expression_free(Pointer expression);
+    Pointer mapnik_expression_evaluate(Pointer expression, Pointer builder);
+    int mapnik_expression_test(Pointer expression, Pointer builder);
+    void mapnik_value_free(Pointer value);
+    int mapnik_value_type(Pointer value);
+    int mapnik_value_bool(Pointer value);
+    long mapnik_value_int(Pointer value);
+    double mapnik_value_double(Pointer value);
+    String mapnik_value_string(Pointer value);
+    Pointer mapnik_path_expression_parse(String text);
+    void mapnik_path_expression_free(Pointer path);
+    String mapnik_path_expression_evaluate(Pointer path, Pointer builder);
+    int mapnik_transform_check(String text);
 
     // geometry operations
     int mapnik_geometry_centroid(byte[] wkb, int length, double[] outXy);
