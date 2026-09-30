@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, develop]
   pull_request:
@@ -25,3 +26,35 @@ jobs:
       # Native tests skip themselves when libmapnik_c is absent, so this
       # verifies compilation, javadoc and packaging only.
       - run: ./gradlew build
+
+  sign-dry-run:
+    name: Signing dry run (no upload)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - run: chmod +x ./gradlew
+
+      - name: Sign and publish to a local directory only
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./gradlew publishToMavenLocal
+
+      - name: Verify signatures
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          DIR=~/.m2/repository/dev/avelar/mapnik-java/$(./gradlew -q printVersion)
+          ls "$DIR"
+          test "$(ls "$DIR"/*.asc | wc -l)" -ge 4
+          for sig in "$DIR"/*.asc; do gpg --verify "$sig" "${sig%.asc}"; done
