@@ -28,6 +28,7 @@ typedef struct mapnik_feature mapnik_feature_t;
 typedef struct mapnik_projection mapnik_projection_t;
 typedef struct mapnik_transform mapnik_transform_t;
 typedef struct mapnik_image mapnik_image_t;
+typedef struct mapnik_feature_builder mapnik_feature_builder_t;
 
 /* ---- runtime ------------------------------------------------------------------------------ */
 
@@ -314,6 +315,27 @@ const char* mapnik_feature_geometry_wkt(mapnik_feature_t* f);
 const char* mapnik_feature_geometry_geojson(mapnik_feature_t* f);
 /* The whole feature (geometry and attributes) as a GeoJSON Feature. NULL on error. */
 const char* mapnik_feature_to_geojson(mapnik_feature_t* f);
+
+/* ---- building features, memory datasource ------------------------------------------------- */
+
+/* A feature under construction. Give it a geometry (2D WKB) and attributes, then push it into a
+ * memory datasource. Setting a name twice keeps the last value. */
+mapnik_feature_builder_t* mapnik_feature_builder_create(long long id);
+void mapnik_feature_builder_free(mapnik_feature_builder_t* b);
+int  mapnik_feature_builder_set_geometry_wkb(mapnik_feature_builder_t* b, const unsigned char* wkb, int length);
+void mapnik_feature_builder_put_null(mapnik_feature_builder_t* b, const char* key);
+void mapnik_feature_builder_put_string(mapnik_feature_builder_t* b, const char* key, const char* value);
+void mapnik_feature_builder_put_int(mapnik_feature_builder_t* b, const char* key, long long value);
+void mapnik_feature_builder_put_double(mapnik_feature_builder_t* b, const char* key, double value);
+void mapnik_feature_builder_put_bool(mapnik_feature_builder_t* b, const char* key, int value);
+
+/* A datasource that holds features in memory. NULL on error. Use it like any datasource. */
+mapnik_datasource_t* mapnik_memory_datasource_create(void);
+/* Copies the feature out of the builder. The builder can be reused or freed. */
+int  mapnik_memory_datasource_push(mapnik_datasource_t* ds, mapnik_feature_builder_t* b);
+int  mapnik_memory_datasource_size(mapnik_datasource_t* ds);
+void mapnik_memory_datasource_clear(mapnik_datasource_t* ds);
+void mapnik_memory_datasource_set_envelope(mapnik_datasource_t* ds, double minx, double miny, double maxx, double maxy);
 
 /* ---- projections -------------------------------------------------------------------------- */
 

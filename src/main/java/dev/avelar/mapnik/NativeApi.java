@@ -198,6 +198,21 @@ interface NativeApi extends Library {
     String mapnik_feature_geometry_geojson(Pointer feature);
     String mapnik_feature_to_geojson(Pointer feature);
 
+    // building features, memory datasource
+    Pointer mapnik_feature_builder_create(long id);
+    void mapnik_feature_builder_free(Pointer builder);
+    int mapnik_feature_builder_set_geometry_wkb(Pointer builder, byte[] wkb, int length);
+    void mapnik_feature_builder_put_null(Pointer builder, String key);
+    void mapnik_feature_builder_put_string(Pointer builder, String key, String value);
+    void mapnik_feature_builder_put_int(Pointer builder, String key, long value);
+    void mapnik_feature_builder_put_double(Pointer builder, String key, double value);
+    void mapnik_feature_builder_put_bool(Pointer builder, String key, int value);
+    Pointer mapnik_memory_datasource_create();
+    int mapnik_memory_datasource_push(Pointer datasource, Pointer builder);
+    int mapnik_memory_datasource_size(Pointer datasource);
+    void mapnik_memory_datasource_clear(Pointer datasource);
+    void mapnik_memory_datasource_set_envelope(Pointer datasource, double minx, double miny, double maxx, double maxy);
+
     // projections
     Pointer mapnik_projection_create(String params);
     void mapnik_projection_free(Pointer projection);

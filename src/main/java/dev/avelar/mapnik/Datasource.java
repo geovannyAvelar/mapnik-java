@@ -12,7 +12,7 @@ import java.util.Map;
  * attach it to a {@link Layer}. Needs the matching input plugin registered with
  * {@link Mapnik#registerDatasources}.
  */
-public final class Datasource implements AutoCloseable {
+public class Datasource implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
     public enum Type { VECTOR, RASTER }

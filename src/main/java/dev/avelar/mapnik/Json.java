@@ -18,6 +18,68 @@ final class Json {
         this.s = s;
     }
 
+    /** A JSON string literal, with the same escapes the native writer uses. */
+    static String escape(String s) {
+        StringBuilder sb = new StringBuilder(s.length() + 2).append('"');
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"': sb.append("\\\""); break;
+                case '\\': sb.append("\\\\"); break;
+                case '\n': sb.append("\\n"); break;
+                case '\r': sb.append("\\r"); break;
+                case '\t': sb.append("\\t"); break;
+                default:
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+            }
+        }
+        return sb.append('"').toString();
+    }
+
+    /** Compact JSON text for a value read by {@link #parse}. */
+    @SuppressWarnings("unchecked")
+    static String stringify(Object v) {
+        if (v == null) {
+            return "null";
+        }
+        if (v instanceof String) {
+            return escape((String) v);
+        }
+        if (v instanceof Boolean) {
+            return v.toString();
+        }
+        if (v instanceof Number) {
+            return Xml.number(((Number) v).doubleValue());
+        }
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof Map) {
+            sb.append('{');
+            boolean first = true;
+            for (Map.Entry<String, Object> e : ((Map<String, Object>) v).entrySet()) {
+                if (!first) {
+                    sb.append(',');
+                }
+                first = false;
+                sb.append(escape(e.getKey())).append(':').append(stringify(e.getValue()));
+            }
+            return sb.append('}').toString();
+        }
+        sb.append('[');
+        boolean first = true;
+        for (Object o : (List<Object>) v) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            sb.append(stringify(o));
+        }
+        return sb.append(']').toString();
+    }
+
     static Object parse(String text) {
         if (text == null) {
             throw new IllegalArgumentException("JSON text is null");
