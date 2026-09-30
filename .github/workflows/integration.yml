@@ -95,6 +95,12 @@ jobs:
           ./gradlew test run --args="$RUNNER_TEMP/world.png"
           file "$RUNNER_TEMP/world.png"
 
+      - name: WMS example
+        working-directory: examples/wms-server
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4

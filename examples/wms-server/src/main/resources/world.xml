@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="epsg:4326" background-color="#cfe8f7">
+  <Style name="land">
+    <Rule>
+      <PolygonSymbolizer fill="#8fbc6b"/>
+      <LineSymbolizer stroke="#3d5c2a" stroke-width="1.5"/>
+    </Rule>
+  </Style>
+  <Style name="route">
+    <Rule>
+      <LineSymbolizer stroke="#d1322b" stroke-width="3"/>
+    </Rule>
+  </Style>
+  <Layer name="land" srs="epsg:4326">
+    <StyleName>land</StyleName>
+    <Datasource>
+      <Parameter name="type">geojson</Parameter>
+      <Parameter name="file">world.geojson</Parameter>
+    </Datasource>
+  </Layer>
+  <Layer name="route" srs="epsg:4326">
+    <StyleName>route</StyleName>
+    <Datasource>
+      <Parameter name="type">geojson</Parameter>
+      <Parameter name="file">route.geojson</Parameter>
+    </Datasource>
+  </Layer>
+</Map>

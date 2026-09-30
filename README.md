@@ -84,9 +84,12 @@ java -Djna.library.path=build/native -cp ... YourApp
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system.
 
-## Example
+## Examples
 
-`examples/render-demo` is a small app that depends on mapnik-java and renders a map to a PNG. See its README.
+- `examples/render-demo`: a small app that depends on mapnik-java and renders a map to a PNG.
+- `examples/wms-server`: a minimal WMS 1.1.1 and 1.3.0 server (GetCapabilities and GetMap) built on the wrapper.
+
+Both have their own README.
 
 ## Testing
 
