@@ -2,7 +2,7 @@
 
 Java bindings for [Mapnik](https://mapnik.org), the C++ map rendering library.
 
-Mapnik has no C API, so Java cannot call it directly. This project puts a small `extern "C"` shim in front of the Mapnik C++ API and binds the shim with [JNA](https://github.com/java-native-access/jna). It works on Java 17 and later and needs no code generation.
+Mapnik has no C API, so Java cannot call it directly. This project puts a small `extern "C"` shim in front of the Mapnik C++ API and binds the shim with [JNA](https://github.com/java-native-access/jna). It works on Java 8 and later and needs no code generation.
 
 ## How it works
 
@@ -22,17 +22,35 @@ Java (MapnikMap)  ->  JNA (NativeApi)  ->  libmapnik_c.so (C shim)  ->  Mapnik (
 - Mapnik 4.x with development files (`mapnik-config` on your `PATH`)
 - Mapnik's own development dependencies (on Debian or Ubuntu, for example `libharfbuzz-dev` and `libcairo2-dev`)
 - CMake 3.16 or later and a C++20 compiler
-- JDK 17 or later and Maven
+- JDK 8 or later (the Gradle wrapper is included)
 
 ## Build
 
 ```bash
-cmake -S native -B target/cmake
-cmake --build target/cmake
-mvn test
+cmake -S native -B build/cmake
+cmake --build build/cmake
+./gradlew build
 ```
 
-The shared library is written to `target/native/libmapnik_c.so`. Maven passes that directory to the tests through `jna.library.path`.
+The shared library is written to `build/native/libmapnik_c.so`. Gradle passes that directory to the tests through `jna.library.path`. Tests skip themselves when the library is missing.
+
+## Installation
+
+Releases of the Java jar are published to Maven Central. It does **not** contain the native shim, because the shim has to be compiled against the Mapnik installed on your machine. Build `libmapnik_c.so` as described above and make it available to JNA.
+
+```kotlin
+// Gradle
+implementation("dev.avelar:mapnik-java:0.1.0")
+```
+
+```xml
+<!-- Maven -->
+<dependency>
+  <groupId>dev.avelar</groupId>
+  <artifactId>mapnik-java</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
 
 ## Usage
 
@@ -41,9 +59,9 @@ Mapnik.registerDatasources("/usr/local/lib/mapnik/input");
 Mapnik.registerFonts("/usr/local/lib/mapnik/fonts");
 
 try (MapnikMap map = new MapnikMap(1024, 768)) {
-    map.load(Path.of("style.xml")).zoomAll();
+    map.load(Paths.get("style.xml")).zoomAll();
 
-    map.renderToFile(Path.of("out.png"), "png");
+    map.renderToFile(Paths.get("out.png"), "png");
     byte[] png = map.renderToPng();
 }
 ```
@@ -51,7 +69,7 @@ try (MapnikMap map = new MapnikMap(1024, 768)) {
 To use the library from your own application, put `libmapnik_c.so` on the JNA search path:
 
 ```bash
-java -Djna.library.path=target/native -cp ... YourApp
+java -Djna.library.path=build/native -cp ... YourApp
 ```
 
 Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plugin and font directories on your system.
@@ -69,7 +87,7 @@ Use `mapnik-config --input-plugins` and `mapnik-config --fonts` to find the plug
 native/                       C shim and CMake build
 src/main/java/dev/avelar/mapnik   Java wrapper
 src/test/java/dev/avelar/mapnik   JUnit tests
-pom.xml                       Maven build
+build.gradle.kts              Gradle build and publishing
 ```
 
 ## License

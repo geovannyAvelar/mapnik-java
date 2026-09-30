@@ -24,4 +24,4 @@ target_link_libraries(mapnik_c PRIVATE ${MAPNIK_LIBS})
 
 # Drop lib next to where Maven expects it.
 set_target_properties(mapnik_c PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../target/native)
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/native)
