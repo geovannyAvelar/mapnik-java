@@ -4,7 +4,8 @@ plugins {
     id("java-library")
     id("maven-publish")
     id("signing")
-    id("com.gradleup.nmcp") version "0.0.9"
+    id("com.gradleup.nmcp") version "1.6.2"
+    id("com.gradleup.nmcp.aggregation") version "1.6.2"
 }
 
 val mapnikVersion = providers.gradleProperty("mapnik.version").get()
@@ -123,15 +124,6 @@ tasks.register("nativesJar") {
     description = "Packages every prebuilt native bundle found under build/natives."
     group = "build"
     dependsOn(nativesTasks.values.map { it.jar })
-}
-
-// Publishes every native artifact that was built, whichever platforms those are.
-tasks.register("publishNativesToCentralPortal") {
-    group = "publishing"
-    description = "Publishes the natives artifact of every platform whose bundle is under build/natives."
-    dependsOn(provider {
-        nativesTargets.filter { it.present }.map { "publishNatives${it.id}PublicationToCentralPortal" }
-    })
 }
 
 val testedTarget = nativesTargets.firstOrNull { it.platform == testedPlatform }
@@ -350,17 +342,16 @@ signing {
 // Token from central.sonatype.com -> Account -> Generate User Token
 // ============================================================================
 
-nmcp {
-    publish("mavenJava") {
+// One deployment holds the library and the natives of every platform that was built, so a release is
+// published whole or not at all. Run: ./gradlew publishAggregationToCentralPortal
+nmcpAggregation {
+    centralPortal {
         username = System.getenv("SONATYPE_USERNAME") ?: ""
         password = System.getenv("SONATYPE_PASSWORD") ?: ""
-        publicationType = "AUTOMATIC"
+        publishingType = "AUTOMATIC"
     }
-    for (t in nativesTargets.filter { it.present }) {
-        publish("natives${t.id}") {
-            username = System.getenv("SONATYPE_USERNAME") ?: ""
-            password = System.getenv("SONATYPE_PASSWORD") ?: ""
-            publicationType = "AUTOMATIC"
-        }
-    }
+}
+
+dependencies {
+    nmcpAggregation(project(":"))
 }

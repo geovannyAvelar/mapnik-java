@@ -4,11 +4,26 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      gradle-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # JUnit 6 needs Java 17 to run the tests, and the library is tested on the Java 8 baseline.
+      - dependency-name: org.junit:junit-bom
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
   - package-ecosystem: docker
     directory: /natives/linux
     schedule:
       interval: monthly
+    ignore:
+      # The base image sets the glibc the Linux natives need. 24.04 (glibc 2.39) is the oldest that meets
+      # Mapnik's minimum library versions, so keep it: a newer base would shut out older systems.
+      - dependency-name: ubuntu
+        update-types: [version-update:semver-major, version-update:semver-minor]
