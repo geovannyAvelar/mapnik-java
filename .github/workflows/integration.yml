@@ -45,7 +45,8 @@ jobs:
           sudo apt-get install -y ninja-build \
             libicu-dev libfreetype6-dev libharfbuzz-dev libxml2-dev libjpeg-dev \
             libtiff-dev libwebp-dev libcairo2-dev libproj-dev libgdal-dev \
-            libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev
+            libavif-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev \
+            libboost-url-dev libboost-context-dev libboost-json-dev
 
       # Building Mapnik takes a while, so cache the installed tree per version.
       - name: Restore Mapnik
@@ -53,7 +54,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/mapnik-install
-          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v2
+          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v3
 
       - name: Build Mapnik ${{ env.MAPNIK_VERSION }}
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
@@ -61,7 +62,7 @@ jobs:
           git clone --branch "v$MAPNIK_VERSION" --depth 1 --recurse-submodules --shallow-submodules \
             https://github.com/mapnik/mapnik.git "$RUNNER_TEMP/mapnik"
           cd "$RUNNER_TEMP/mapnik"
-          cmake --preset linux-ci-release -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1
+          cmake --preset linux-ci-release -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 -DUSE_PLUGIN_INPUT_TILES_SSL=OFF
           cmake --build --preset linux-ci-release
           cmake --install build --prefix "$HOME/mapnik-install"
 
@@ -71,7 +72,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/mapnik-install
-          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v2
+          key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v3
 
       # A CMake-installed Mapnik has no mapnik-config: point CMake at its package
       # config and find the input plugins by looking for a known one.

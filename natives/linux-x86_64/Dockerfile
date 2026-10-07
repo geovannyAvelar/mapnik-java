@@ -6,19 +6,21 @@
 #
 #   docker build -f natives/linux-x86_64/Dockerfile --target export --output type=local,dest=build/natives .
 #
-# Ubuntu 24.04 is the oldest release whose libraries meet Mapnik 4.1's minimums (Boost 1.83,
+# Ubuntu 24.04 is the oldest release whose libraries meet Mapnik 4.3 minimums (Boost 1.83,
 # HarfBuzz 8.3, PROJ 9.4), so the bundle needs a host with at least glibc 2.39 and libstdc++ from GCC 13.
 
 FROM ubuntu:24.04 AS mapnik
-ARG MAPNIK_VERSION=4.1.0
+ARG MAPNIK_VERSION=4.3.2
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates git cmake ninja-build g++ python3 pkg-config patchelf file \
-        libboost-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev \
+        ca-certificates git ninja-build g++ python3 python3-pip pkg-config patchelf file \
+        libboost-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libboost-context-dev libboost-json-dev \
         libicu-dev libfreetype-dev libharfbuzz-dev libxml2-dev libjpeg-dev libtiff-dev libwebp-dev \
-        libcairo2-dev libproj-dev libpng-dev libsqlite3-dev zlib1g-dev \
+        libcairo2-dev libavif-dev libproj-dev libpng-dev libsqlite3-dev zlib1g-dev \
         fonts-dejavu-core proj-data \
     && rm -rf /var/lib/apt/lists/*
+# Mapnik 4.3 needs CMake 3.30; Ubuntu 24.04 has 3.28.
+RUN pip install --break-system-packages --no-cache-dir cmake==3.31.6
 RUN git clone --branch "v${MAPNIK_VERSION}" --depth 1 --recurse-submodules --shallow-submodules \
         https://github.com/mapnik/mapnik.git /src/mapnik
 WORKDIR /src/mapnik
@@ -29,8 +31,8 @@ RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREF
         -DBUILD_UTILITY_GEOMETRY_TO_WKB=OFF -DBUILD_UTILITY_MAPNIK_INDEX=OFF -DBUILD_UTILITY_MAPNIK_RENDER=OFF \
         -DBUILD_UTILITY_PGSQL2SQLITE=OFF -DBUILD_UTILITY_SHAPEINDEX=OFF -DBUILD_UTILITY_SVG2PNG=OFF \
         -DUSE_MEMORY_MAPPED_FILE=ON -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 \
-        -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF \
-        -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF \
+        -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF -DUSE_PLUGIN_INPUT_GDAL_OGR=OFF \
+        -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=OFF -DUSE_PLUGIN_INPUT_TILES_SSL=OFF \
  && cmake --build build \
  && cmake --install build
 

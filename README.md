@@ -46,8 +46,8 @@ On Linux x86_64, add the natives artifact next to the library:
 
 ```kotlin
 // Gradle
-implementation("dev.avelar:mapnik-java:4.1.0.0")
-runtimeOnly("dev.avelar:mapnik-java-natives-linux-x86_64:4.1.0.0")
+implementation("dev.avelar:mapnik-java:4.3.2.0")
+runtimeOnly("dev.avelar:mapnik-java-natives-linux-x86_64:4.3.2.0")
 ```
 
 ```xml
@@ -55,12 +55,12 @@ runtimeOnly("dev.avelar:mapnik-java-natives-linux-x86_64:4.1.0.0")
 <dependency>
   <groupId>dev.avelar</groupId>
   <artifactId>mapnik-java</artifactId>
-  <version>4.1.0.0</version>
+  <version>4.3.2.0</version>
 </dependency>
 <dependency>
   <groupId>dev.avelar</groupId>
   <artifactId>mapnik-java-natives-linux-x86_64</artifactId>
-  <version>4.1.0.0</version>
+  <version>4.3.2.0</version>
   <scope>runtime</scope>
 </dependency>
 ```
@@ -97,7 +97,7 @@ scripts/test-natives-linux.sh      # runs the integration tests on a machine wit
 
 Releases follow Mapnik: `<mapnik version>.<wrapper revision>`.
 
-- `4.1.0.0` is the first release for Mapnik 4.1.0. `4.1.0.1` is a wrapper-only fix for the same Mapnik.
+- `4.3.2.0` is the first release for Mapnik 4.3.2. `4.3.2.1` is a wrapper-only fix for the same Mapnik.
 - Use the release whose major.minor matches the Mapnik you have installed. The shim is compiled against your Mapnik, so a mismatch can fail to compile or behave differently.
 - The wrapper logs a warning the first time you create a `MapnikMap` if the loaded Mapnik differs in major.minor from the one the release was built for. `Mapnik.expectedVersion()`, `Mapnik.version()` and `Mapnik.isCompatible()` expose the same check.
 - The CMake build prints a warning for the same mismatch.

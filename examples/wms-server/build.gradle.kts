@@ -7,7 +7,7 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.avelar:mapnik-java:4.1.0.0")
+    implementation("dev.avelar:mapnik-java:4.3.2.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")

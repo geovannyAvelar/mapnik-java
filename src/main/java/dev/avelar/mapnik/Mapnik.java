@@ -18,7 +18,7 @@ public final class Mapnik {
         return NativeApi.INSTANCE.mapnik_version();
     }
 
-    /** Numeric Mapnik version: major * 100000 + minor * 100 + patch, for example 400100 for 4.1.0. */
+    /** Numeric Mapnik version: major * 100000 + minor * 100 + patch, for example 400302 for 4.3.2. */
     public static int versionNumber() {
         return NativeApi.INSTANCE.mapnik_version_number();
     }
@@ -104,7 +104,7 @@ public final class Mapnik {
         return NativeApi.INSTANCE.mapnik_datasource_plugin_registered(name) == 1;
     }
 
-    /** The directories plugins were registered from, as Mapnik reports them. */
+    /** The directories plugins were registered from, separated by colons. */
     public static String datasourcePluginDirectories() {
         return NativeApi.INSTANCE.mapnik_datasource_plugin_directories();
     }

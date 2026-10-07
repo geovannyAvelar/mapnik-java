@@ -2,9 +2,9 @@
 
 Versions follow Mapnik: `<mapnik version>.<wrapper revision>`.
 
-## Unreleased (4.1.0.0)
+## Unreleased (4.3.2.0)
 
-First release, for Mapnik 4.1.0.
+First release, for Mapnik 4.3.2.
 
 - Maps, layers, datasources (file, in-memory, implemented in Java), features and geometry, projections and coordinate transforms.
 - Rendering to PNG, JPEG, WebP, TIFF and Cairo formats, image operations, UTFGrid, tile maths.

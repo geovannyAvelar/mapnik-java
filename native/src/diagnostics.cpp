@@ -113,7 +113,12 @@ int mapnik_register_datasource_file(const char* path) {
 }
 
 const char* mapnik_datasource_plugin_directories(void) {
-    return text(mapnik::datasource_cache::instance().plugin_directories());
+    std::string joined;
+    for (auto const& d : mapnik::datasource_cache::instance().plugin_directories()) {
+        if (!joined.empty()) joined += ':';
+        joined += d;
+    }
+    return text(joined);
 }
 
 int mapnik_datasource_plugin_registered(const char* name) {

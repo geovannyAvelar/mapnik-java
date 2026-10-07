@@ -85,7 +85,7 @@ class NativeLoaderTest {
     }
 
     private static Bundle sample() {
-        return new Bundle().put("lib/libmapnik_c.so", "shim").put("lib/libmapnik.so.4.1", "mapnik")
+        return new Bundle().put("lib/libmapnik_c.so", "shim").put("lib/libmapnik.so.4.3", "mapnik")
             .put("plugins/input/geojson.input", "plugin").put("fonts/DejaVuSans.ttf", "font")
             .put("proj/proj.db", "database").put("NOTICE", "notice");
     }
@@ -191,10 +191,10 @@ class NativeLoaderTest {
     @Test
     void aCorruptFileIsRefusedAndLeavesNoDirectory(@TempDir Path tmp) throws IOException {
         Bundle b = sample();
-        b.manifestOverride.put("lib/libmapnik.so.4.1", "lib/libmapnik.so.4.1\t6\t" + sha("tampered".getBytes(StandardCharsets.UTF_8)));
+        b.manifestOverride.put("lib/libmapnik.so.4.3", "lib/libmapnik.so.4.3\t6\t" + sha("tampered".getBytes(StandardCharsets.UTF_8)));
         IOException e = assertThrows(IOException.class, () -> NativeLoader.extract(b, tmp));
         assertTrue(e.getMessage().contains("corrupt"), e.getMessage());
-        assertTrue(e.getMessage().contains("libmapnik.so.4.1"), e.getMessage());
+        assertTrue(e.getMessage().contains("libmapnik.so.4.3"), e.getMessage());
         try (Stream<Path> s = Files.list(tmp)) {
             assertEquals(0, s.count(), "no half-unpacked directory remains");
         }
