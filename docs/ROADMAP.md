@@ -134,11 +134,11 @@ check real output, such as pixels and XML.
 - One static pair of native handlers and an id registry keep the source reachable for as long as
   Mapnik uses the datasource, and a release callback lets go of it afterwards.
 
-## Prebuilt natives (done, Linux x86_64)
+## Prebuilt natives (done, Linux x86_64 and aarch64)
 
 - A Docker pipeline builds Mapnik, the shim, its libraries, plugins, fonts and PROJ data into one
   bundle, with a MANIFEST of sizes and SHA-256 sums, licences and a NOTICE.
-- Published as `mapnik-java-natives-linux-x86_64`. `NativeLoader` unpacks it once into a private cache,
+- Published as `mapnik-java-natives-linux-x86_64` and `-linux-aarch64`, each built and tested on a native runner. `NativeLoader` unpacks it once into a private cache,
   verifies every file and points PROJ at the bundled data.
 - The integration tests run against it in a clean Ubuntu 24.04 container (`scripts/test-natives-linux.sh`).
 - Left out: gdal, ogr, postgis and pgraster plugins. Needs glibc 2.39 or later.

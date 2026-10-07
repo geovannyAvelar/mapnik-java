@@ -40,21 +40,29 @@ val nativeDir = layout.buildDirectory.dir("native")
 // ============================================================================
 // Prebuilt native libraries
 // ============================================================================
-// natives/linux-x86_64/Dockerfile builds Mapnik, the shim and everything they need into
-// build/natives/linux-x86_64. This packages that directory as a jar, which the loader unpacks at run time.
+// natives/linux/Dockerfile builds Mapnik, the shim and everything they need into
+// build/natives/<platform>. This packages each directory found there as a jar, which the loader
+// unpacks at run time.
 
-val nativesDirectory = layout.buildDirectory.dir("natives/linux-x86_64")
-val hasNatives = nativesDirectory.get().asFile.resolve("MANIFEST").exists()
-val useBundledNatives = providers.gradleProperty("bundledNatives").isPresent
-val nativesArtifactId = "mapnik-java-natives-linux-x86_64"
-
-val nativesJar = tasks.register<Jar>("nativesJar") {
-    description = "Packages the prebuilt Linux x86_64 native libraries."
-    group = "build"
-    archiveBaseName.set(nativesArtifactId)
-    from(nativesDirectory) { into("dev/avelar/mapnik/natives/linux-x86_64") }
-    onlyIf { hasNatives }
+class NativesTarget(val platform: String, val label: String) {
+    val directory = layout.buildDirectory.dir("natives/$platform")
+    val present: Boolean get() = directory.get().asFile.resolve("MANIFEST").exists()
+    val artifactId = "mapnik-java-natives-$platform"
+    val id: String = platform.split("-").joinToString("") { it.replaceFirstChar(Char::uppercase) }.replace("_", "")
 }
+
+val nativesTargets = listOf(
+    NativesTarget("linux-x86_64", "Linux x86_64"),
+    NativesTarget("linux-aarch64", "Linux aarch64")
+)
+val useBundledNatives = providers.gradleProperty("bundledNatives").isPresent
+
+// The platform the integration tests use the bundle of: -PnativesPlatform=, else this machine's.
+val hostPlatform = run {
+    val arch = System.getProperty("os.arch")
+    "linux-" + if (arch == "aarch64" || arch == "arm64") "aarch64" else "x86_64"
+}
+val testedPlatform = providers.gradleProperty("nativesPlatform").orElse(hostPlatform).get()
 
 // Maven Central wants a sources and a javadoc jar for every artifact. These hold a note instead.
 val nativesNote = layout.buildDirectory.file("natives-note/README.txt")
@@ -63,27 +71,47 @@ val writeNativesNote = tasks.register("writeNativesNote") {
     doLast {
         nativesNote.get().asFile.apply {
             parentFile.mkdirs()
-            writeText("Prebuilt native libraries for mapnik-java on Linux x86_64: Mapnik, its dependencies, input plugins,\n" +
+            writeText("Prebuilt native libraries for mapnik-java: Mapnik, its dependencies, input plugins,\n" +
                 "fonts and PROJ data. There is no Java source here. See https://github.com/geovannyAvelar/mapnik-java\n" +
                 "and the NOTICE and licenses/ entries inside the main jar for what is bundled and under which licenses.\n")
         }
     }
 }
-val nativesSourcesJar = tasks.register<Jar>("nativesSourcesJar") {
-    archiveBaseName.set(nativesArtifactId)
-    archiveClassifier.set("sources")
-    from(writeNativesNote)
-    onlyIf { hasNatives }
-}
-val nativesJavadocJar = tasks.register<Jar>("nativesJavadocJar") {
-    archiveBaseName.set(nativesArtifactId)
-    archiveClassifier.set("javadoc")
-    from(writeNativesNote)
-    onlyIf { hasNatives }
+
+class NativesTasks(val jar: TaskProvider<Jar>, val sources: TaskProvider<Jar>, val javadoc: TaskProvider<Jar>)
+
+val nativesTasks = nativesTargets.associateWith { t ->
+    val jar = tasks.register<Jar>("nativesJar${t.id}") {
+        description = "Packages the prebuilt ${t.label} native libraries."
+        group = "build"
+        archiveBaseName.set(t.artifactId)
+        from(t.directory) { into("dev/avelar/mapnik/natives/${t.platform}") }
+        onlyIf { t.present }
+    }
+    val sources = tasks.register<Jar>("nativesSourcesJar${t.id}") {
+        archiveBaseName.set(t.artifactId)
+        archiveClassifier.set("sources")
+        from(writeNativesNote)
+        onlyIf { t.present }
+    }
+    val javadoc = tasks.register<Jar>("nativesJavadocJar${t.id}") {
+        archiveBaseName.set(t.artifactId)
+        archiveClassifier.set("javadoc")
+        from(writeNativesNote)
+        onlyIf { t.present }
+    }
+    NativesTasks(jar, sources, javadoc)
 }
 
-if (useBundledNatives && !hasNatives) {
-    throw GradleException("-PbundledNatives needs the native bundle: run scripts/build-natives-linux.sh first")
+tasks.register("nativesJar") {
+    description = "Packages every prebuilt native bundle found under build/natives."
+    group = "build"
+    dependsOn(nativesTasks.values.map { it.jar })
+}
+
+val testedTarget = nativesTargets.firstOrNull { it.platform == testedPlatform }
+if (useBundledNatives && (testedTarget == null || !testedTarget.present)) {
+    throw GradleException("-PbundledNatives needs the native bundle for $testedPlatform: run scripts/build-natives-linux.sh first")
 }
 
 // Integration tests run against a real Mapnik install and fail if it is missing.
@@ -99,7 +127,7 @@ configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configu
 // With -PbundledNatives the tests load Mapnik from the natives jar instead of the system.
 dependencies {
     if (useBundledNatives) {
-        add(integrationTest.runtimeOnlyConfigurationName, files(nativesJar.map { it.archiveFile }))
+        add(integrationTest.runtimeOnlyConfigurationName, files(nativesTasks.getValue(testedTarget!!).jar.map { it.archiveFile }))
     }
 }
 
@@ -245,15 +273,16 @@ publishing {
             }
         }
 
-        if (hasNatives) {
-            create<MavenPublication>("natives") {
-                artifactId = nativesArtifactId
-                artifact(nativesJar)
-                artifact(nativesSourcesJar)
-                artifact(nativesJavadocJar)
+        for (t in nativesTargets.filter { it.present }) {
+            val tasksOfTarget = nativesTasks.getValue(t)
+            create<MavenPublication>("natives${t.id}") {
+                artifactId = t.artifactId
+                artifact(tasksOfTarget.jar)
+                artifact(tasksOfTarget.sources)
+                artifact(tasksOfTarget.javadoc)
                 pom {
-                    fillPom("mapnik-java natives (Linux x86_64)",
-                        "Prebuilt Mapnik and mapnik-java native libraries for Linux x86_64, with their dependencies, " +
+                    fillPom("mapnik-java natives (${t.label})",
+                        "Prebuilt Mapnik and mapnik-java native libraries for ${t.label}, with their dependencies, " +
                             "input plugins, fonts and PROJ data. Add it next to mapnik-java to need nothing installed.",
                         bundlesLgpl = true)
                 }
@@ -285,8 +314,8 @@ signing {
     if (gpgKey != null && gpgPassphrase != null) {
         useInMemoryPgpKeys(gpgKey, gpgPassphrase)
         sign(publishing.publications["mavenJava"])
-        if (hasNatives) {
-            sign(publishing.publications["natives"])
+        for (t in nativesTargets.filter { it.present }) {
+            sign(publishing.publications["natives${t.id}"])
         }
     }
 }
@@ -302,8 +331,8 @@ nmcp {
         password = System.getenv("SONATYPE_PASSWORD") ?: ""
         publicationType = "AUTOMATIC"
     }
-    if (hasNatives) {
-        publish("natives") {
+    for (t in nativesTargets.filter { it.present }) {
+        publish("natives${t.id}") {
             username = System.getenv("SONATYPE_USERNAME") ?: ""
             password = System.getenv("SONATYPE_PASSWORD") ?: ""
             publicationType = "AUTOMATIC"

@@ -4,7 +4,7 @@
 # the shim, Mapnik, every library they need except the C and C++ runtimes, the input plugins, fonts
 # and PROJ data. Build from the repository root:
 #
-#   docker build -f natives/linux-x86_64/Dockerfile --target export --output type=local,dest=build/natives .
+#   docker build -f natives/linux/Dockerfile --target export [--build-arg PLATFORM=linux-aarch64] --output type=local,dest=build/natives .
 #
 # Ubuntu 24.04 is the oldest release whose libraries meet Mapnik 4.3 minimums (Boost 1.83,
 # HarfBuzz 8.3, PROJ 9.4), so the bundle needs a host with at least glibc 2.39 and libstdc++ from GCC 13.
@@ -46,8 +46,9 @@ RUN cmake -S /src/shim/native -B /src/shim/build/cmake -G Ninja -DCMAKE_BUILD_TY
  && ls -l /src/shim/build/native
 
 FROM shim AS bundle
-COPY natives/linux-x86_64/bundle.sh /usr/local/bin/bundle.sh
-RUN bash /usr/local/bin/bundle.sh /out/linux-x86_64
+ARG PLATFORM=linux-x86_64
+COPY natives/linux/bundle.sh /usr/local/bin/bundle.sh
+RUN bash /usr/local/bin/bundle.sh "/out/${PLATFORM}" "${PLATFORM}"
 
 FROM scratch AS export
 COPY --from=bundle /out/ /

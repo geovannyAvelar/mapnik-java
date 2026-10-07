@@ -21,10 +21,20 @@ on:
       - '.github/workflows/natives.yml'
 
 jobs:
-  linux-x86_64:
-    name: Linux x86_64 bundle
-    runs-on: ubuntu-24.04
-    timeout-minutes: 150
+  bundle:
+    name: ${{ matrix.label }} bundle
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            label: Linux x86_64
+            runner: ubuntu-24.04
+          - platform: linux-aarch64
+            label: Linux aarch64
+            runner: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v4
@@ -40,25 +50,27 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: natives/linux-x86_64/Dockerfile
+          file: natives/linux/Dockerfile
           target: export
-          build-args: MAPNIK_VERSION=${{ env.MAPNIK_VERSION }}
+          build-args: |
+            MAPNIK_VERSION=${{ env.MAPNIK_VERSION }}
+            PLATFORM=${{ matrix.platform }}
           outputs: type=local,dest=build/natives
-          cache-from: type=gha,scope=natives-linux-x86_64
-          cache-to: type=gha,mode=max,scope=natives-linux-x86_64
+          cache-from: type=gha,scope=natives-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=natives-${{ matrix.platform }}
 
       - name: What was built
         run: |
-          ls -la build/natives/linux-x86_64 build/natives/linux-x86_64/lib | head -60
-          du -sh build/natives/linux-x86_64
-          cat build/natives/linux-x86_64/NOTICE
+          ls -la build/natives/${{ matrix.platform }} build/natives/${{ matrix.platform }}/lib | head -60
+          du -sh build/natives/${{ matrix.platform }}
+          cat build/natives/${{ matrix.platform }}/NOTICE
 
       # A clean Ubuntu with only a JDK: the integration tests must pass using nothing but the bundle.
       - name: Test on a machine with no Mapnik
-        run: docker buildx build -f natives/linux-x86_64/Dockerfile.test --progress plain .
+        run: docker buildx build -f natives/linux/Dockerfile.test --build-arg PLATFORM=${{ matrix.platform }} --progress plain .
 
       - uses: actions/upload-artifact@v4
         with:
-          name: natives-linux-x86_64
+          name: natives-${{ matrix.platform }}
           path: build/natives
           retention-days: 14

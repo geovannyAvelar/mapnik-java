@@ -48,7 +48,8 @@ jobs:
       - name: Download the native bundle
         uses: actions/download-artifact@v4
         with:
-          name: natives-linux-x86_64
+          pattern: natives-*
+          merge-multiple: true
           path: build/natives
 
       - run: ./gradlew build
@@ -59,4 +60,4 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: ./gradlew publishMavenJavaPublicationToCentralPortal publishNativesPublicationToCentralPortal
+        run: ./gradlew publishMavenJavaPublicationToCentralPortal publishNativesLinuxX8664PublicationToCentralPortal publishNativesLinuxAarch64PublicationToCentralPortal

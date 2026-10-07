@@ -3,13 +3,15 @@
 # Run inside the image built by the Dockerfile next to this file.
 set -euo pipefail
 
-OUT="${1:?usage: bundle.sh <output dir>}"
+OUT="${1:?usage: bundle.sh <output dir> <platform>}"
+PLATFORM="${2:?usage: bundle.sh <output dir> <platform>}"
+MULTIARCH="$(gcc -dumpmachine)"   # x86_64-linux-gnu, aarch64-linux-gnu
 PREFIX=/opt/mapnik
 SHIM=/src/shim/build/native/libmapnik_c.so
 
 # Provided by the host and never bundled: the C library family and the C++ runtime. A bundled copy
 # would be ignored once the JVM has loaded the host's, and mixing versions breaks things.
-HOST_LIBS='^(linux-vdso\.so|ld-linux-x86-64\.so|libc\.so|libm\.so|libdl\.so|libpthread\.so|librt\.so|libresolv\.so|libutil\.so|libstdc\+\+\.so|libgcc_s\.so)'
+HOST_LIBS='^(linux-vdso\.so|ld-linux-x86-64\.so|ld-linux-aarch64\.so|libc\.so|libm\.so|libdl\.so|libpthread\.so|librt\.so|libresolv\.so|libutil\.so|libstdc\+\+\.so|libgcc_s\.so)'
 
 rm -rf "$OUT"
 mkdir -p "$OUT/lib" "$OUT/plugins/input" "$OUT/fonts" "$OUT/proj" "$OUT/licenses"
@@ -71,7 +73,7 @@ cp "$PREFIX"/share/doc/mapnik*/COPYING "$OUT/licenses/mapnik.COPYING" 2>/dev/nul
   || cp /src/mapnik/COPYING "$OUT/licenses/mapnik.COPYING"
 packages=()
 for f in "$OUT"/lib/* "$OUT"/fonts/*.ttf; do
-  src="$(readlink -f "/usr/lib/x86_64-linux-gnu/$(basename "$f")" 2>/dev/null || true)"
+  src="$(readlink -f "/usr/lib/${MULTIARCH}/$(basename "$f")" 2>/dev/null || true)"
   pkg="$(dpkg -S "$src" 2>/dev/null | head -1 | cut -d: -f1 || true)"
   [[ -n "$pkg" ]] && packages+=("$pkg")
 done
@@ -80,7 +82,7 @@ for pkg in $(printf '%s\n' "${packages[@]}" | sort -u); do
   [[ -f "/usr/share/doc/$pkg/copyright" ]] && cp "/usr/share/doc/$pkg/copyright" "$OUT/licenses/$pkg.copyright"
 done
 {
-  echo "mapnik-java native bundle for linux-x86_64"
+  echo "mapnik-java native bundle for ${PLATFORM}"
   echo "Mapnik $(ls "$OUT"/lib/libmapnik.so.* | head -1 | sed 's/.*libmapnik.so.//')"
   echo
   echo "Debian packages the bundled libraries come from:"

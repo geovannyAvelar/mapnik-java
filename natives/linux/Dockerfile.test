@@ -4,7 +4,7 @@
 # libraries installed, which is what a user of the natives jar has. Needs build/natives from the
 # Dockerfile next to this one. Build from the repository root:
 #
-#   docker build -f natives/linux-x86_64/Dockerfile.test .
+#   docker build -f natives/linux/Dockerfile.test [--build-arg PLATFORM=linux-aarch64] .
 #
 # The build fails if a test fails.
 
@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 RUN if ldconfig -p | grep -E 'libmapnik|libproj\.so'; then echo "this image must not contain Mapnik or PROJ" >&2; exit 1; fi \
  && if command -v mapnik-config >/dev/null; then echo "mapnik-config must not be installed" >&2; exit 1; fi
 
+ARG PLATFORM=linux-x86_64
 COPY . /work
 WORKDIR /work
-RUN test -f build/natives/linux-x86_64/MANIFEST
-RUN ./gradlew --no-daemon integrationTest -PbundledNatives
+RUN test -f build/natives/${PLATFORM}/MANIFEST
+RUN ./gradlew --no-daemon integrationTest -PbundledNatives -PnativesPlatform=${PLATFORM}
