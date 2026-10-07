@@ -151,7 +151,12 @@ for f, refs in rewrites.items():
 for f in os.listdir(os.path.join(dejavu, "ttf")):
     if f.endswith(".ttf"):
         shutil.copyfile(os.path.join(dejavu, "ttf", f), os.path.join(out, "fonts", f))
-shutil.copytree(proj_data, os.path.join(out, "proj"), dirs_exist_ok=True)
+# PROJ's data from Homebrew carries datum-shift grids of hundreds of megabytes. Keep the database and the
+# small files, as the Debian proj-data package the Linux bundle uses does.
+for name in sorted(os.listdir(proj_data)):
+    src = os.path.join(proj_data, name)
+    if os.path.isfile(src) and (name == "proj.db" or os.path.getsize(src) <= 1_000_000):
+        shutil.copyfile(src, os.path.join(out, "proj", name))
 
 # Licences: Mapnik's, DejaVu's, and the notices of the Homebrew formula behind each library.
 shutil.copyfile(os.path.join(prefix, "COPYING"), os.path.join(out, "licenses/mapnik.COPYING"))
