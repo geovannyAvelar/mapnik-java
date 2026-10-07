@@ -74,3 +74,91 @@ jobs:
           name: natives-${{ matrix.platform }}
           path: build/natives
           retention-days: 14
+
+  # macOS has no containers: build on a Mac runner, with Homebrew supplying Mapnik's dependencies.
+  macos:
+    name: ${{ matrix.label }} bundle
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-aarch64
+            label: macOS aarch64
+            runner: macos-14
+          - platform: macos-x86_64
+            label: macOS x86_64
+            runner: macos-15-intel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read target Mapnik version
+        run: echo "MAPNIK_VERSION=$(grep '^mapnik.version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_ENV"
+
+      - name: Restore Mapnik
+        id: mapnik-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/mapnik-prefix
+          key: mapnik-${{ matrix.platform }}-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/macos/build.sh') }}
+
+      - name: Build Mapnik
+        if: steps.mapnik-cache.outputs.cache-hit != 'true'
+        run: STOP_AFTER_MAPNIK=1 natives/macos/build.sh ${{ matrix.platform }}
+
+      - name: Save Mapnik
+        if: steps.mapnik-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/mapnik-prefix
+          key: mapnik-${{ matrix.platform }}-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/macos/build.sh') }}
+
+      - name: Build the shim and the bundle
+        run: natives/macos/build.sh ${{ matrix.platform }}
+
+      - name: What was built
+        run: |
+          ls -la build/natives/${{ matrix.platform }} build/natives/${{ matrix.platform }}/lib | head -80
+          cat build/natives/${{ matrix.platform }}/NOTICE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.platform }}
+          path: build/natives
+          retention-days: 14
+
+  # A second, fresh Mac that never built anything: the integration tests must pass with the bundle alone.
+  macos-test:
+    name: ${{ matrix.label }} test
+    needs: macos
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-aarch64
+            label: macOS aarch64
+            runner: macos-14
+          - platform: macos-x86_64
+            label: macOS x86_64
+            runner: macos-15-intel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: natives-${{ matrix.platform }}
+          path: build/natives
+
+      - name: Integration tests against the bundle
+        run: ./gradlew integrationTest -PbundledNatives -PnativesPlatform=${{ matrix.platform }}

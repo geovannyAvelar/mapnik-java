@@ -33,7 +33,7 @@ class BundledNativesIntegrationTest {
 
     @Test
     void theBundleHasItsParts() {
-        for (String part : new String[] {"lib/libmapnik_c.so", "plugins/input", "fonts", "proj/proj.db", "licenses", "MANIFEST", "NOTICE", ".complete"}) {
+        for (String part : new String[] {"lib/" + System.mapLibraryName("mapnik_c"), "plugins/input", "fonts", "proj/proj.db", "licenses", "MANIFEST", "NOTICE", ".complete"}) {
             assertTrue(Files.exists(bundle.resolve(part)), part + " in " + bundle);
         }
     }
@@ -47,7 +47,7 @@ class BundledNativesIntegrationTest {
             assertEquals(Long.parseLong(f[1]), Files.size(bundle.resolve(f[0])), f[0]);
         }
         assertTrue(listed.size() > 20, "a real bundle has many files: " + listed.size());
-        assertTrue(listed.contains("lib/libmapnik_c.so"));
+        assertTrue(listed.contains("lib/" + System.mapLibraryName("mapnik_c")));
         assertFalse(listed.contains("MANIFEST"));
     }
 
@@ -65,6 +65,7 @@ class BundledNativesIntegrationTest {
 
     @Test
     void everyMapnikLibraryInTheProcessCameFromTheBundle() throws IOException {
+        assumeTrue(Files.exists(Paths.get("/proc/self/maps")), "needs /proc; the macOS bundle is checked when it is built");
         List<String> maps = Files.readAllLines(Paths.get("/proc/self/maps"), StandardCharsets.UTF_8);
         String[] ours = {"libmapnik", "libicuuc", "libproj", "libfreetype", "libharfbuzz", "libcairo", "libpng", "libjpeg",
             "libtiff", "libwebp", "libsqlite3", "libxml2"};
@@ -92,6 +93,7 @@ class BundledNativesIntegrationTest {
 
     @Test
     void theShimItselfIsTheBundledOne() throws IOException {
+        assumeTrue(Files.exists(Paths.get("/proc/self/maps")), "needs /proc; the macOS bundle is checked when it is built");
         boolean found = false;
         for (String line : Files.readAllLines(Paths.get("/proc/self/maps"), StandardCharsets.UTF_8)) {
             if (line.contains("libmapnik_c.so")) {

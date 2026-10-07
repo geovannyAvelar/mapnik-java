@@ -53,14 +53,17 @@ class NativesTarget(val platform: String, val label: String) {
 
 val nativesTargets = listOf(
     NativesTarget("linux-x86_64", "Linux x86_64"),
-    NativesTarget("linux-aarch64", "Linux aarch64")
+    NativesTarget("linux-aarch64", "Linux aarch64"),
+    NativesTarget("macos-aarch64", "macOS aarch64 (Apple Silicon)"),
+    NativesTarget("macos-x86_64", "macOS x86_64 (Intel)")
 )
 val useBundledNatives = providers.gradleProperty("bundledNatives").isPresent
 
 // The platform the integration tests use the bundle of: -PnativesPlatform=, else this machine's.
 val hostPlatform = run {
     val arch = System.getProperty("os.arch")
-    "linux-" + if (arch == "aarch64" || arch == "arm64") "aarch64" else "x86_64"
+    val os = if (System.getProperty("os.name").lowercase().startsWith("mac")) "macos" else "linux"
+    os + "-" + if (arch == "aarch64" || arch == "arm64") "aarch64" else "x86_64"
 }
 val testedPlatform = providers.gradleProperty("nativesPlatform").orElse(hostPlatform).get()
 
@@ -107,6 +110,15 @@ tasks.register("nativesJar") {
     description = "Packages every prebuilt native bundle found under build/natives."
     group = "build"
     dependsOn(nativesTasks.values.map { it.jar })
+}
+
+// Publishes every native artifact that was built, whichever platforms those are.
+tasks.register("publishNativesToCentralPortal") {
+    group = "publishing"
+    description = "Publishes the natives artifact of every platform whose bundle is under build/natives."
+    dependsOn(provider {
+        nativesTargets.filter { it.present }.map { "publishNatives${it.id}PublicationToCentralPortal" }
+    })
 }
 
 val testedTarget = nativesTargets.firstOrNull { it.platform == testedPlatform }
