@@ -99,7 +99,7 @@ jobs:
 
       - name: Restore Mapnik
         id: mapnik-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: build/mapnik-prefix
           key: mapnik-${{ matrix.platform }}-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/macos/build.sh') }}
@@ -110,7 +110,7 @@ jobs:
 
       - name: Save Mapnik
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: build/mapnik-prefix
           key: mapnik-${{ matrix.platform }}-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/macos/build.sh') }}
