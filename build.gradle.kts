@@ -58,7 +58,8 @@ val nativeDir = layout.buildDirectory.dir("native")
 // build/natives/<platform>. This packages each directory found there as a jar, which the loader
 // unpacks at run time.
 
-class NativesTarget(val platform: String, val label: String) {
+// An add-on target (such as the PostGIS plugin) has a name after the platform, like linux-x86_64-postgis.
+class NativesTarget(val platform: String, val label: String, val addOn: String? = null) {
     val directory = layout.buildDirectory.dir("natives/$platform")
     val present: Boolean get() = directory.get().asFile.resolve("MANIFEST").exists()
     val artifactId = "mapnik-java-natives-$platform"
@@ -69,8 +70,13 @@ val nativesTargets = listOf(
     NativesTarget("linux-x86_64", "Linux x86_64"),
     NativesTarget("linux-aarch64", "Linux aarch64"),
     NativesTarget("macos-aarch64", "macOS aarch64 (Apple Silicon)"),
-    NativesTarget("macos-x86_64", "macOS x86_64 (Intel)")
+    NativesTarget("macos-x86_64", "macOS x86_64 (Intel)"),
+    NativesTarget("linux-x86_64-postgis", "Linux x86_64, PostGIS plugin", "postgis"),
+    NativesTarget("linux-aarch64-postgis", "Linux aarch64, PostGIS plugin", "postgis")
 )
+
+// -PnativesExtras=postgis adds the named add-on bundles to the class path of -PbundledNatives test runs.
+val testedExtras = providers.gradleProperty("nativesExtras").orElse("").get().split(",").filter { it.isNotBlank() }
 val useBundledNatives = providers.gradleProperty("bundledNatives").isPresent
 
 // The platform the integration tests use the bundle of: -PnativesPlatform=, else this machine's.
@@ -145,6 +151,14 @@ configurations[integrationTest.runtimeOnlyConfigurationName].extendsFrom(configu
 dependencies {
     if (useBundledNatives) {
         add(integrationTest.runtimeOnlyConfigurationName, files(nativesTasks.getValue(testedTarget!!).jar.map { it.archiveFile }))
+        for (extra in testedExtras) {
+            val addOn = nativesTargets.firstOrNull { it.platform == "$testedPlatform-$extra" }
+                ?: throw GradleException("no add-on bundle called $extra for $testedPlatform")
+            if (!addOn.present) {
+                throw GradleException("-PnativesExtras=$extra needs build/natives/${addOn.platform}: run scripts/build-natives-linux.sh")
+            }
+            add(integrationTest.runtimeOnlyConfigurationName, files(nativesTasks.getValue(addOn).jar.map { it.archiveFile }))
+        }
     }
 }
 
@@ -187,6 +201,11 @@ tasks.register<Test>("integrationTest") {
         // No system Mapnik and no shim on the path: everything must come from the natives jar.
         systemProperty("mapnik.input.plugins", "")
         systemProperty("mapnik.fonts", "")
+        systemProperty("mapnik.test.extras", testedExtras.joinToString(","))
+        // PostGIS tests connect to a database given by PG* environment variables, when there is one.
+        for (v in listOf("PGHOST", "PGPORT", "PGUSER", "PGPASSWORD", "PGDATABASE")) {
+            System.getenv(v)?.let { environment(v, it) }
+        }
     } else {
         systemProperty("jna.library.path", nativeDir.get().asFile.absolutePath)
         systemProperty("mapnik.input.plugins", mapnikInputPlugins.get())
@@ -298,10 +317,27 @@ publishing {
                 artifact(tasksOfTarget.sources)
                 artifact(tasksOfTarget.javadoc)
                 pom {
-                    fillPom("mapnik-java natives (${t.label})",
-                        "Prebuilt Mapnik and mapnik-java native libraries for ${t.label}, with their dependencies, " +
-                            "input plugins, fonts and PROJ data. Add it next to mapnik-java to need nothing installed.",
-                        bundlesLgpl = true)
+                    if (t.addOn == null) {
+                        fillPom("mapnik-java natives (${t.label})",
+                            "Prebuilt Mapnik and mapnik-java native libraries for ${t.label}, with their dependencies, " +
+                                "input plugins, fonts and PROJ data. Add it next to mapnik-java to need nothing installed.",
+                            bundlesLgpl = true)
+                    } else {
+                        val base = t.platform.removeSuffix("-${t.addOn}")
+                        fillPom("mapnik-java natives add-on (${t.label})",
+                            "The ${t.addOn} input plugin and the libraries only it needs, for the mapnik-java natives of " +
+                                "$base. Add it next to mapnik-java-natives-$base; the library finds it by itself.",
+                            bundlesLgpl = true)
+                        // The add-on is useless alone, so depend on the main natives of the same version.
+                        withXml {
+                            val deps = asNode().appendNode("dependencies")
+                            val dep = deps.appendNode("dependency")
+                            dep.appendNode("groupId", project.group.toString())
+                            dep.appendNode("artifactId", "mapnik-java-natives-$base")
+                            dep.appendNode("version", project.version.toString())
+                            dep.appendNode("scope", "runtime")
+                        }
+                    }
                 }
             }
         }

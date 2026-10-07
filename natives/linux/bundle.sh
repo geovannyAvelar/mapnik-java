@@ -45,7 +45,11 @@ mapnik_so="$(readlink -f "$PREFIX"/lib/libmapnik.so)"
 mapnik_soname="$(readelf -d "$mapnik_so" | sed -n 's/.*Library soname: \[\(.*\)\]/\1/p')"
 add_file "$mapnik_so" "$mapnik_soname"
 
+# Plugins that ship as add-on bundles (see bundle-extra.sh), not in the main one.
+EXTRA_PLUGINS=' postgis+pgraster.input '
+
 for p in "$PREFIX"/lib/mapnik/input/*.input; do
+  [[ "$EXTRA_PLUGINS" == *" $(basename "$p") "* ]] && continue
   cp -L "$p" "$OUT/plugins/input/$(basename "$p")"
   scan "$OUT/plugins/input/$(basename "$p")"
 done

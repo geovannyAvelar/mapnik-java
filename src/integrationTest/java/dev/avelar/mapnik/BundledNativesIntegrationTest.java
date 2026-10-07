@@ -124,8 +124,13 @@ class BundledNativesIntegrationTest {
 
     @Test
     void theHeavyPluginsAreLeftOut() {
-        for (String p : new String[] {"gdal", "ogr", "postgis", "pgraster"}) {
+        for (String p : new String[] {"gdal", "ogr"}) {
             assertFalse(Mapnik.isDatasourceRegistered(p), p + " is not bundled");
+        }
+        // PostGIS and pgraster are one plugin file, in the add-on bundle only
+        boolean addOn = java.util.Arrays.asList(System.getProperty("mapnik.test.extras", "").split(",")).contains("postgis");
+        for (String p : new String[] {"postgis", "pgraster"}) {
+            assertEquals(addOn, Mapnik.isDatasourceRegistered(p), p + " is there only with the postgis add-on bundle");
         }
     }
 

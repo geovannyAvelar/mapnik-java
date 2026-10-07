@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates git ninja-build g++ python3 python3-pip pkg-config patchelf file \
         libboost-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libboost-context-dev libboost-json-dev \
         libicu-dev libfreetype-dev libharfbuzz-dev libxml2-dev libjpeg-dev libtiff-dev libwebp-dev \
-        libcairo2-dev libavif-dev libproj-dev libpng-dev libsqlite3-dev zlib1g-dev \
+        libcairo2-dev libavif-dev libpq-dev libproj-dev libpng-dev libsqlite3-dev zlib1g-dev \
         fonts-dejavu-core proj-data \
     && rm -rf /var/lib/apt/lists/*
 # Mapnik 4.3 needs CMake 3.30; Ubuntu 24.04 has 3.28.
@@ -24,7 +24,7 @@ RUN pip install --break-system-packages --no-cache-dir cmake==3.31.6
 RUN git clone --branch "v${MAPNIK_VERSION}" --depth 1 --recurse-submodules --shallow-submodules \
         https://github.com/mapnik/mapnik.git /src/mapnik
 WORKDIR /src/mapnik
-# No GDAL, OGR or PostGIS plugins: each pulls in a very large dependency tree. Logging is switched on
+# No GDAL or OGR plugins: they pull in a very large dependency tree. PostGIS (with pgraster, they are built together) is shipped as an add-on bundle. Logging is switched on
 # because Mapnik drops every log message otherwise.
 RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/mapnik \
         -DBUILD_TESTING=OFF -DBUILD_DEMO_VIEWER=OFF -DBUILD_DEMO_CPP=OFF -DBUILD_BENCHMARK=OFF \
@@ -32,7 +32,7 @@ RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREF
         -DBUILD_UTILITY_PGSQL2SQLITE=OFF -DBUILD_UTILITY_SHAPEINDEX=OFF -DBUILD_UTILITY_SVG2PNG=OFF \
         -DUSE_MEMORY_MAPPED_FILE=ON -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 \
         -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF -DUSE_PLUGIN_INPUT_GDAL_OGR=OFF \
-        -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=OFF -DUSE_PLUGIN_INPUT_TILES_SSL=OFF \
+        -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=ON -DUSE_PLUGIN_INPUT_TILES_SSL=OFF \
  && cmake --build build \
  && cmake --install build
 
@@ -47,8 +47,9 @@ RUN cmake -S /src/shim/native -B /src/shim/build/cmake -G Ninja -DCMAKE_BUILD_TY
 
 FROM shim AS bundle
 ARG PLATFORM=linux-x86_64
-COPY natives/linux/bundle.sh /usr/local/bin/bundle.sh
-RUN bash /usr/local/bin/bundle.sh "/out/${PLATFORM}" "${PLATFORM}"
+COPY natives/linux/bundle.sh natives/linux/bundle-extra.sh /usr/local/bin/
+RUN bash /usr/local/bin/bundle.sh "/out/${PLATFORM}" "${PLATFORM}" \
+ && bash /usr/local/bin/bundle-extra.sh "/out/${PLATFORM}" "/out/${PLATFORM}-postgis" "${PLATFORM}" "postgis+pgraster.input" postgis
 
 FROM scratch AS export
 COPY --from=bundle /out/ /

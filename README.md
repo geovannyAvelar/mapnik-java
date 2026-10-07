@@ -75,6 +75,34 @@ What to know:
 - **Licences:** Mapnik is LGPL and the bundled libraries have their own licences. The jar carries each one under `licenses/`, and a `NOTICE` listing the packages. The libraries are separate shared files, which you can replace.
 - **Size:** tens of megabytes.
 
+### Add-ons: the PostGIS plugin
+
+The PostGIS input plugin (which Mapnik builds together with `pgraster`) needs `libpq` and its libraries (OpenSSL, Kerberos, LDAP), which most users do not
+want in the main bundle. It is a separate artifact for Linux, `mapnik-java-natives-linux-x86_64-postgis` or
+`mapnik-java-natives-linux-aarch64-postgis`, which depends on the main natives of the same version. Add it and
+the library finds it by itself: no registration is needed.
+
+```kotlin
+runtimeOnly("dev.avelar:mapnik-java-natives-linux-x86_64:4.3.2.0")
+runtimeOnly("dev.avelar:mapnik-java-natives-linux-x86_64-postgis:4.3.2.0")
+```
+
+```java
+Map<String, Object> params = new HashMap<>();
+params.put("type", "postgis");
+params.put("host", "db.example.com");
+params.put("dbname", "gis");
+params.put("user", "reader");
+params.put("password", "...");
+params.put("table", "roads");
+params.put("geometry_field", "geom");
+Datasource ds = Datasource.create(params);
+```
+
+Both bundles are unpacked into one directory, so each combination of add-ons has its own cache entry. The
+add-on carries its own OpenSSL, so it is not updated with your system's: update it by updating the artifact.
+There is no add-on for macOS yet. GDAL and OGR are not offered as an add-on (see [docs/RASTER.md](docs/RASTER.md)).
+
 ### Your own Mapnik
 
 Without the natives artifact, the library loads `libmapnik_c` from the system. Build it against your Mapnik as described in [Build](#build), then make it available to JNA, for example with `-Djna.library.path=build/native` or `-Dmapnik.native.dir=/path`.

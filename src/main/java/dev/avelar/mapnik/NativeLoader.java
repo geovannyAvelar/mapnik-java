@@ -41,6 +41,9 @@ final class NativeLoader {
     static final String RESOURCE_ROOT = "dev/avelar/mapnik/natives/";
     private static final String LIBRARY_NAME = "mapnik_c";
 
+    /** Add-on bundles that may sit next to the main one: {@code <platform>-<name>} under the resource root. */
+    private static final String[] EXTRAS = {"postgis"};
+
     private static volatile Path bundleDir;
 
     private NativeLoader() {}
@@ -130,8 +133,23 @@ final class NativeLoader {
         if (loader.getResource(root + "MANIFEST") == null) {
             return null;
         }
+        // Optional add-on bundles (such as the PostGIS plugin) are merged into the same directory, so
+        // that their plugins find the base libraries through the same relative paths.
+        List<ResourceSource> extras = new ArrayList<>();
+        for (String extra : EXTRAS) {
+            final String extraRoot = RESOURCE_ROOT + platform + "-" + extra + "/";
+            if (loader.getResource(extraRoot + "MANIFEST") != null) {
+                extras.add(path -> {
+                    InputStream in = loader.getResourceAsStream(extraRoot + path);
+                    if (in == null) {
+                        throw new IOException("missing from the natives add-on bundle: " + extraRoot + path);
+                    }
+                    return in;
+                });
+            }
+        }
         try {
-            return extract(source, cacheRoot());
+            return extract(source, extras, cacheRoot());
         } catch (IOException e) {
             throw new UncheckedIOException("could not unpack the bundled native libraries", e);
         }
@@ -218,9 +236,38 @@ final class NativeLoader {
      * someone else, or writable by other users) a private temporary directory is used instead.
      */
     static Path extract(ResourceSource source, Path cacheRoot) throws IOException {
-        String manifest = read(source, "MANIFEST");
-        List<Entry> entries = parseManifest(manifest);
-        String id = sha256(manifest.getBytes(StandardCharsets.UTF_8)).substring(0, 16);
+        return extract(source, new ArrayList<ResourceSource>(), cacheRoot);
+    }
+
+    /**
+     * As {@link #extract(ResourceSource, Path)}, merging add-on bundles into the same directory. The
+     * directory's name hashes every manifest, so each combination of add-ons gets its own. An add-on
+     * may not list a file the main bundle or another add-on already has.
+     */
+    static Path extract(ResourceSource source, List<ResourceSource> extras, Path cacheRoot) throws IOException {
+        List<ResourceSource> sources = new ArrayList<>();
+        sources.add(source);
+        sources.addAll(extras);
+        List<Entry> entries = new ArrayList<>();
+        List<ResourceSource> owner = new ArrayList<>();      // the source of each entry
+        StringBuilder all = new StringBuilder();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (ResourceSource src : sources) {
+            String manifest = read(src, "MANIFEST");
+            all.append(manifest).append("\n--\n");
+            for (Entry e : parseManifest(manifest)) {
+                if (!seen.add(e.path)) {
+                    throw new IOException("the natives add-on bundle lists a file the main bundle already has: " + e.path);
+                }
+                entries.add(e);
+                owner.add(src);
+            }
+        }
+        String id = sha256(all.toString().getBytes(StandardCharsets.UTF_8)).substring(0, 16);
+        StringBuilder merged = new StringBuilder();
+        for (Entry e : entries) {
+            merged.append(e.path).append('\t').append(e.size).append('\t').append(e.sha256).append('\n');
+        }
 
         Path root = safeRoot(cacheRoot);
         boolean temporary = root == null;
@@ -236,10 +283,10 @@ final class NativeLoader {
 
         Path staging = Files.createTempDirectory(root, id + ".tmp-");
         try {
-            for (Entry e : entries) {
-                copyVerified(source, e, staging);
+            for (int i = 0; i < entries.size(); i++) {
+                copyVerified(owner.get(i), entries.get(i), staging);
             }
-            Files.write(staging.resolve("MANIFEST"), manifest.getBytes(StandardCharsets.UTF_8));
+            Files.write(staging.resolve("MANIFEST"), merged.toString().getBytes(StandardCharsets.UTF_8));
             Files.write(staging.resolve(".complete"), new byte[0]);
             try {
                 Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);

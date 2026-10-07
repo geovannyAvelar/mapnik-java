@@ -149,6 +149,7 @@ check real output, such as pixels and XML.
 
 - `RasterGrid`: GeoTIFF and Esri ASCII grid reading in pure Java.
 - `MapPool` builder (warm-up, maximum wait) and `stats()`.
+- A PostGIS add-on natives artifact for Linux: the plugin and the libraries only it needs, merged into the main bundle's directory by the loader.
 - Vector tiles: `Datasource.mbtiles`, `pmtiles` and `tilesFromUrl`, through Mapnik's `tiles` input plugin.
 - Typed text placement helpers on `Symbolizer` (label placement, positions and fallback sizes, wrapping,
   alignment, line labels), checked by Mapnik's strict loader.
@@ -164,4 +165,4 @@ check real output, such as pixels and XML.
 
 ## Later
 
-GDAL/OGR and PostGIS natives as optional extra artifacts, and anything users ask for.
+A GDAL/OGR add-on (very large), PostGIS on macOS, and anything users ask for.

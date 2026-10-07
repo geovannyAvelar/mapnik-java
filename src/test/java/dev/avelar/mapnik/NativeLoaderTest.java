@@ -313,4 +313,43 @@ class NativeLoaderTest {
         assertFalse(dir.startsWith(file));
         assertEquals("shim", read(dir.resolve("lib/libmapnik_c.so")));
     }
+
+    // ---------------------------------------------------------------- add-on bundles
+
+    private static Bundle postgis() {
+        return new Bundle().put("lib/libpq.so.5", "pq").put("plugins/input/postgis.input", "pg").put("NOTICE.postgis", "pg notice");
+    }
+
+    @Test
+    void anAddOnIsMergedIntoTheSameDirectoryUnderItsOwnId(@org.junit.jupiter.api.io.TempDir Path tmp) throws Exception {
+        Path base = NativeLoader.extract(sample(), tmp);
+        Path both = NativeLoader.extract(sample(), java.util.Collections.<NativeLoader.ResourceSource>singletonList(postgis()), tmp);
+        assertNotEquals(base, both, "each combination of add-ons has its own directory");
+        assertEquals("shim", read(both.resolve("lib/libmapnik_c.so")));
+        assertEquals("pq", read(both.resolve("lib/libpq.so.5")));
+        assertEquals("pg", read(both.resolve("plugins/input/postgis.input")));
+        assertEquals("pg notice", read(both.resolve("NOTICE.postgis")));
+        assertTrue(Files.exists(both.resolve(".complete")));
+        String manifest = read(both.resolve("MANIFEST"));
+        assertTrue(manifest.contains("lib/libpq.so.5\t"), manifest);
+        assertTrue(manifest.contains("lib/libmapnik_c.so\t"), manifest);
+        assertFalse(Files.exists(base.resolve("lib/libpq.so.5")), "the base alone is unchanged");
+    }
+
+    @Test
+    void anAddOnCannotOverwriteAFileOfTheMainBundle(@org.junit.jupiter.api.io.TempDir Path tmp) {
+        Bundle evil = new Bundle().put("lib/libmapnik_c.so", "trojan");
+        IOException e = assertThrows(IOException.class,
+            () -> NativeLoader.extract(sample(), java.util.Collections.<NativeLoader.ResourceSource>singletonList(evil), tmp));
+        assertTrue(e.getMessage().contains("lib/libmapnik_c.so"), e.getMessage());
+    }
+
+    @Test
+    void aCorruptAddOnFileIsRefused(@org.junit.jupiter.api.io.TempDir Path tmp) {
+        Bundle bad = postgis();
+        bad.manifestOverride.put("lib/libpq.so.5", "lib/libpq.so.5\t2\t" + sha("tampered".getBytes(StandardCharsets.UTF_8)));
+        IOException e = assertThrows(IOException.class,
+            () -> NativeLoader.extract(sample(), java.util.Collections.<NativeLoader.ResourceSource>singletonList(bad), tmp));
+        assertTrue(e.getMessage().contains("libpq"), e.getMessage());
+    }
 }

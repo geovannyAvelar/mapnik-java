@@ -44,12 +44,21 @@ public final class Mapnik {
      * so this Mapnik, its dependencies, input plugins, fonts and PROJ data all ship with the program.
      */
     public static boolean isBundled() {
+        load();
         return NativeLoader.bundleDirectory() != null;
     }
 
     /** The directory the bundle was unpacked to, or null if the natives are not bundled. */
     public static java.nio.file.Path bundledDirectory() {
+        load();
         return NativeLoader.bundleDirectory();
+    }
+
+    /** Load the native library now if it is not loaded yet, so that what is known about where it came from is true. */
+    private static void load() {
+        if (NativeApi.INSTANCE == null) {
+            throw new IllegalStateException("the native library could not be loaded");
+        }
     }
 
     /** True if Mapnik was built with Cairo, which PDF, SVG and PostScript output needs. */
