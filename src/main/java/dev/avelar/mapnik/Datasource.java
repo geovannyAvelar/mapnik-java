@@ -2,6 +2,7 @@ package dev.avelar.mapnik;
 
 import com.sun.jna.Pointer;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -84,6 +85,50 @@ public class Datasource implements AutoCloseable {
         } finally {
             N.mapnik_params_free(p);
         }
+    }
+
+    /**
+     * Vector tiles from an MBTiles file (Mapnik Vector Tile data in a SQLite database). {@code layer}
+     * is the tile layer to draw, such as {@code "places"}; null reads every layer. Use it in a layer whose
+     * projection is {@code epsg:3857}: tiles are Web Mercator. Needs Mapnik's {@code tiles} input plugin,
+     * which the prebuilt natives include.
+     */
+    public static Datasource mbtiles(Path file, String layer) {
+        return tiles(file, layer, ".mbtiles");
+    }
+
+    /** As {@link #mbtiles}, for a PMTiles archive. */
+    public static Datasource pmtiles(Path file, String layer) {
+        return tiles(file, layer, ".pmtiles");
+    }
+
+    private static Datasource tiles(Path file, String layer, String extension) {
+        // Mapnik tells the two formats apart by the file name, so a wrong name would be read as the wrong format
+        if (!file.getFileName().toString().endsWith(extension)) {
+            throw new IllegalArgumentException("expected a " + extension + " file: " + file);
+        }
+        Map<String, Object> params = new java.util.LinkedHashMap<>();
+        params.put("type", "tiles");
+        params.put("file", file.toAbsolutePath().toString());
+        if (layer != null) {
+            params.put("layer", layer);
+        }
+        return create(params);
+    }
+
+    /**
+     * Tiles fetched over HTTP: {@code url} is a TileJSON document ({@code .json}) or a template such as
+     * {@code http://host/{z}/{x}/{y}.pbf} (or {@code .mvt}; other endings are read as raster tiles). The
+     * prebuilt natives do not include HTTPS, so use {@code http://} or a local proxy. {@code layer} as in {@link #mbtiles}.
+     */
+    public static Datasource tilesFromUrl(String url, String layer) {
+        Map<String, Object> params = new java.util.LinkedHashMap<>();
+        params.put("type", "tiles");
+        params.put("url", url);
+        if (layer != null) {
+            params.put("layer", layer);
+        }
+        return create(params);
     }
 
     public Type type() {
