@@ -20,11 +20,18 @@ brew install "${FORMULAE[@]}" || brew upgrade "${FORMULAE[@]}" || true
 PREFIXES=""
 PKGCONFIG=""
 for f in "${FORMULAE[@]}"; do
+  [[ "$f" == icu4c ]] && continue   # handled below, it is versioned
   p="$(brew --prefix "$f" 2>/dev/null || true)"
   [[ -d "$p" ]] || continue
   PREFIXES="$PREFIXES;$p"
   [[ -d "$p/lib/pkgconfig" ]] && PKGCONFIG="$PKGCONFIG:$p/lib/pkgconfig"
 done
+# icu4c is versioned (icu4c@77, icu4c@78 ...): use the newest one installed, and say which.
+ICU_FORMULA="$(brew list --formula | grep '^icu4c' | sort -V | tail -1)"
+ICU_ROOT="$(brew --prefix "$ICU_FORMULA")"
+echo "ICU: $ICU_FORMULA at $ICU_ROOT"; ls "$ICU_ROOT/lib" | head -20
+PREFIXES="$PREFIXES;$ICU_ROOT"
+PKGCONFIG="$PKGCONFIG:$ICU_ROOT/lib/pkgconfig"
 export CMAKE_PREFIX_PATH="${PREFIXES#;}"
 export PKG_CONFIG_PATH="${PKGCONFIG#:}:$(brew --prefix)/lib/pkgconfig"
 
@@ -41,7 +48,7 @@ if [[ ! -e "$PREFIX/COPYING" ]]; then
     -DUSE_MEMORY_MAPPED_FILE=ON -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 \
     -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF -DUSE_PLUGIN_INPUT_GDAL_OGR=OFF \
     -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=OFF \
-    -DUSE_PLUGIN_INPUT_TILES_SSL=OFF
+    -DUSE_PLUGIN_INPUT_TILES_SSL=OFF -DICU_ROOT="$ICU_ROOT"
   cmake --build build/mapnik-build
   cmake --install build/mapnik-build
   cp build/mapnik-src/COPYING "$PREFIX/COPYING"
