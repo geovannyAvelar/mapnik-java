@@ -28,9 +28,9 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -51,7 +51,7 @@ jobs:
       # Building Mapnik takes a while, so cache the installed tree per version.
       - name: Restore Mapnik
         id: mapnik-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/mapnik-install
           key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v3
@@ -69,7 +69,7 @@ jobs:
       # Save right away, so a later failure does not throw the build away.
       - name: Save Mapnik
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/mapnik-install
           key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v3
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-reports
           path: build/reports/tests
