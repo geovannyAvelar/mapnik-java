@@ -9,7 +9,7 @@
 # Ubuntu 24.04 is the oldest release whose libraries meet Mapnik 4.3 minimums (Boost 1.83,
 # HarfBuzz 8.3, PROJ 9.4), so the bundle needs a host with at least glibc 2.39 and libstdc++ from GCC 13.
 
-FROM ubuntu:24.04 AS mapnik
+FROM ubuntu:26.04 AS mapnik
 ARG MAPNIK_VERSION=4.3.2
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
