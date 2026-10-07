@@ -7,6 +7,8 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/featureset.hpp>
 #include <mapnik/geometry/box2d.hpp>
+#include <mapnik/image.hpp>
+#include <mapnik/image_any.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/params.hpp>
@@ -21,6 +23,17 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+struct mapnik_image {
+    mapnik::image_rgba8 image;  // always straight alpha outside of a render call
+    mapnik_image(int w, int h) : image(w, h) {}
+    explicit mapnik_image(mapnik::image_rgba8&& i) : image(std::move(i)) {}
+};
+
+struct mapnik_gray {
+    mapnik::image_any image;
+    explicit mapnik_gray(mapnik::image_any&& i) : image(std::move(i)) {}
+};
 
 struct mapnik_map {
     mapnik::Map map;

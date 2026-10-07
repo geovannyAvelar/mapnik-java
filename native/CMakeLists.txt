@@ -35,7 +35,7 @@ if(INSTALLED_MINOR AND NOT INSTALLED_MINOR STREQUAL TARGET_MINOR)
 endif()
 
 add_library(mapnik_c SHARED
-  src/runtime.cpp src/diagnostics.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/feature.cpp src/memory.cpp src/java_datasource.cpp src/expression.cpp src/geometry_out.cpp src/geometry_ops.cpp src/projection.cpp src/image.cpp src/imageops.cpp src/grid.cpp src/render.cpp)
+  src/runtime.cpp src/diagnostics.cpp src/map.cpp src/layer.cpp src/datasource.cpp src/feature.cpp src/memory.cpp src/java_datasource.cpp src/expression.cpp src/geometry_out.cpp src/geometry_ops.cpp src/projection.cpp src/image.cpp src/gray.cpp src/imageops.cpp src/grid.cpp src/render.cpp)
 
 if(MAPNIK_FOUND_VIA STREQUAL "package")
   target_link_libraries(mapnik_c PRIVATE mapnik::mapnik)

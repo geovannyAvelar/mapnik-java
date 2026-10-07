@@ -276,6 +276,19 @@ interface NativeApi extends Library {
     int mapnik_image_get_pixel(Pointer image, int x, int y);
     int mapnik_image_set_pixel(Pointer image, int x, int y, int rgba);
     int mapnik_image_fill(Pointer image, String color);
+
+    Pointer mapnik_gray_create(int type, int width, int height, double initial);
+    void mapnik_gray_free(Pointer gray);
+    int mapnik_gray_width(Pointer gray);
+    int mapnik_gray_height(Pointer gray);
+    int mapnik_gray_type(Pointer gray);
+    int mapnik_gray_get(Pointer gray, int x, int y, double[] out);
+    int mapnik_gray_set(Pointer gray, int x, int y, double value);
+    int mapnik_gray_read(Pointer gray, double[] out, long count);
+    int mapnik_gray_write(Pointer gray, double[] in, long count);
+    int mapnik_gray_range(Pointer gray, int hasNodata, double nodata, double[] outMinMax);
+    Pointer mapnik_gray_colorize(Pointer gray, double[] values, int[] rgba, int[] modes, int stops, int defaultMode,
+                                 int defaultRgba, double epsilon, int hasNodata, double nodata);
     int mapnik_image_is_solid(Pointer image);
     void mapnik_image_copy_rgba(Pointer image, byte[] out);
     int mapnik_image_save(Pointer image, String path, String format);

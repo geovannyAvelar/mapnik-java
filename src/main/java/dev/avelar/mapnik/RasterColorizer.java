@@ -33,6 +33,8 @@ public final class RasterColorizer {
     private String defaultColor;
     private Double epsilon;
     private final List<String> stops = new ArrayList<>();
+    private final List<double[]> stopValues = new ArrayList<>();   // value, mode (-1: the default)
+    private final List<String> stopColors = new ArrayList<>();
 
     private RasterColorizer() {}
 
@@ -82,7 +84,59 @@ public final class RasterColorizer {
             sb.append(" label=\"").append(Xml.escape(label)).append('"');
         }
         stops.add(sb.append("/>").toString());
+        stopValues.add(new double[] {value, mode == null ? -1 : mode.ordinal()});
+        stopColors.add(color);
         return this;
+    }
+
+    /**
+     * Colour a single-band image with these stops, as the raster symbolizer would. Needs no GDAL: this is
+     * how to draw elevation or other data you hold as a {@link GrayImage}.
+     */
+    public Image colorize(GrayImage source) {
+        return source.colorize(this, null);
+    }
+
+    int[] nativeModes() {
+        int[] out = new int[stopValues.size()];
+        for (int i = 0; i < out.length; i++) {
+            int m = (int) stopValues.get(i)[1];
+            out[i] = m < 0 ? 3 : m;
+        }
+        return out;
+    }
+
+    double[] nativeValues() {
+        double[] out = new double[stopValues.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = stopValues.get(i)[0];
+        }
+        return out;
+    }
+
+    int[] nativeColors() {
+        int[] out = new int[stopColors.size()];
+        for (int i = 0; i < out.length; i++) {
+            Color c = Color.parse(stopColors.get(i));
+            out[i] = (c.alpha() << 24) | (c.blue() << 16) | (c.green() << 8) | c.red();
+        }
+        return out;
+    }
+
+    int nativeDefaultMode() {
+        return defaultMode == null ? 1 : defaultMode.ordinal();
+    }
+
+    int nativeDefaultColor() {
+        if (defaultColor == null) {
+            return 0;
+        }
+        Color c = Color.parse(defaultColor);
+        return (c.alpha() << 24) | (c.blue() << 16) | (c.green() << 8) | c.red();
+    }
+
+    double nativeEpsilon() {
+        return epsilon == null ? 0 : epsilon;
     }
 
     public int stopCount() {

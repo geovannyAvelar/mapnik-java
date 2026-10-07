@@ -28,6 +28,7 @@ typedef struct mapnik_feature mapnik_feature_t;
 typedef struct mapnik_projection mapnik_projection_t;
 typedef struct mapnik_transform mapnik_transform_t;
 typedef struct mapnik_image mapnik_image_t;
+typedef struct mapnik_gray mapnik_gray_t;
 typedef struct mapnik_feature_builder mapnik_feature_builder_t;
 typedef struct mapnik_expression mapnik_expression_t;
 typedef struct mapnik_path_expression mapnik_path_expression_t;
@@ -468,6 +469,29 @@ int          mapnik_image_height(mapnik_image_t* img);
 unsigned int mapnik_image_get_pixel(mapnik_image_t* img, int x, int y);
 int          mapnik_image_set_pixel(mapnik_image_t* img, int x, int y, unsigned int rgba);
 int          mapnik_image_fill(mapnik_image_t* img, const char* color);
+
+/* ---- single-band images ------------------------------------------------------------------- */
+
+/* One number per pixel. type is Mapnik's pixel type: 1 gray8, 2 gray8s, 3 gray16, 4 gray16s,
+ * 5 gray32, 6 gray32s, 7 gray32f, 8 gray64, 9 gray64s, 10 gray64f. Values pass as doubles; one
+ * that does not fit the type is refused (-1), never wrapped. Constructors return NULL on error. */
+mapnik_gray_t* mapnik_gray_create(int type, int width, int height, double initial);
+void           mapnik_gray_free(mapnik_gray_t* g);
+int            mapnik_gray_width(mapnik_gray_t* g);
+int            mapnik_gray_height(mapnik_gray_t* g);
+int            mapnik_gray_type(mapnik_gray_t* g);
+int            mapnik_gray_get(mapnik_gray_t* g, int x, int y, double* out);
+int            mapnik_gray_set(mapnik_gray_t* g, int x, int y, double value);
+/* Bulk access, row by row from the top left; count must be width * height. write is all or nothing. */
+int            mapnik_gray_read(mapnik_gray_t* g, double* out, long long count);
+int            mapnik_gray_write(mapnik_gray_t* g, const double* in, long long count);
+/* Smallest and largest value, skipping NaN and, if has_nodata, the nodata value. */
+int            mapnik_gray_range(mapnik_gray_t* g, int has_nodata, double nodata, double* out_min_max);
+/* Colour by stops: modes are 0 discrete, 1 linear, 2 exact, 3 the colorizer's default. Returns a new
+ * RGBA image, or NULL on error. */
+mapnik_image_t* mapnik_gray_colorize(mapnik_gray_t* g, const double* values, const int* rgba,
+                                     const int* modes, int stops, int default_mode, int default_rgba,
+                                     double epsilon, int has_nodata, double nodata);
 int          mapnik_image_is_solid(mapnik_image_t* img);
 /* Copies width*height*4 bytes (r, g, b, a per pixel, row by row) into out. */
 void         mapnik_image_copy_rgba(mapnik_image_t* img, unsigned char* out);

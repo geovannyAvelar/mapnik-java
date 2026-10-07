@@ -9,12 +9,6 @@
 #include <cstring>
 #include <memory>
 
-struct mapnik_image {
-    mapnik::image_rgba8 image;  // always straight alpha outside of a render call
-    mapnik_image(int w, int h) : image(w, h) {}
-    explicit mapnik_image(mapnik::image_rgba8&& i) : image(std::move(i)) {}
-};
-
 using namespace mc;
 
 namespace {
