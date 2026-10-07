@@ -42,7 +42,7 @@ Releases are published to Maven Central. There are two ways to get a working Map
 
 ### Prebuilt natives: nothing to install
 
-On Linux, x86_64 or aarch64, add the natives artifact for your platform next to the library (`mapnik-java-natives-linux-x86_64` or `mapnik-java-natives-linux-aarch64`; the examples use x86_64):
+Add the natives artifact for your platform next to the library: `mapnik-java-natives-linux-x86_64`, `-linux-aarch64`, `-macos-aarch64` (Apple Silicon) or `-macos-x86_64` (Intel). The examples use Linux x86_64:
 
 ```kotlin
 // Gradle
@@ -69,7 +69,8 @@ That is all. The jar holds Mapnik, everything it depends on (ICU, PROJ, FreeType
 
 What to know:
 
-- **Host:** Linux x86_64 or aarch64 with glibc 2.39 or later and the C++ runtime from GCC 13 or later: Ubuntu 24.04, Debian 13, Fedora 40 and newer. The C and C++ runtimes are the host's, not bundled. The bundle is built on Ubuntu 24.04 because Mapnik 4.3 needs Boost 1.83, HarfBuzz 8.3 and PROJ 9.4. macOS and Windows have no prebuilt natives yet.
+- **macOS:** Apple Silicon needs macOS 14 or later and Intel needs macOS 15 or later (the Homebrew libraries it is built from require that). Libraries are ad-hoc signed. PROJ's large datum-shift grids are not included, only its database, so transformations that need a grid fall back to a less exact method.
+- **Linux host:** x86_64 or aarch64 with glibc 2.39 or later and the C++ runtime from GCC 13 or later: Ubuntu 24.04, Debian 13, Fedora 40 and newer. The C and C++ runtimes are the host's, not bundled. The bundle is built on Ubuntu 24.04 because Mapnik 4.3 needs Boost 1.83, HarfBuzz 8.3 and PROJ 9.4. Windows has no prebuilt natives yet.
 - **Plugins left out:** `gdal`, `ogr`, `postgis` and `pgraster`, because each pulls in a very large dependency tree. To use them, build against a Mapnik of your own (below).
 - **Licences:** Mapnik is LGPL and the bundled libraries have their own licences. The jar carries each one under `licenses/`, and a `NOTICE` listing the packages. The libraries are separate shared files, which you can replace.
 - **Size:** tens of megabytes.

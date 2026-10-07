@@ -134,7 +134,7 @@ check real output, such as pixels and XML.
 - One static pair of native handlers and an id registry keep the source reachable for as long as
   Mapnik uses the datasource, and a release callback lets go of it afterwards.
 
-## Prebuilt natives (done, Linux x86_64 and aarch64)
+## Prebuilt natives (done: Linux x86_64 and aarch64, macOS aarch64 and x86_64)
 
 - A Docker pipeline builds Mapnik, the shim, its libraries, plugins, fonts and PROJ data into one
   bundle, with a MANIFEST of sizes and SHA-256 sums, licences and a NOTICE.
@@ -142,7 +142,8 @@ check real output, such as pixels and XML.
   verifies every file and points PROJ at the bundled data.
 - The integration tests run against it in a clean Ubuntu 24.04 container (`scripts/test-natives-linux.sh`).
 - Left out: gdal, ogr, postgis and pgraster plugins. Needs glibc 2.39 or later.
-- Not done: macOS and Windows, a smaller bundle (libproj pulls in curl and gnutls).
+- macOS is built on Mac runners with Homebrew libraries (`natives/macos/build.sh`, `bundle.py`): install names are rewritten to `@loader_path`, files are signed ad hoc, and a second fresh runner runs the integration tests.
+- Not done: Windows, a smaller bundle (libproj pulls in curl and gnutls).
 
 ## Later
 
