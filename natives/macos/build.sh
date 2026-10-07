@@ -58,8 +58,11 @@ fi
 [[ "${STOP_AFTER_MAPNIK:-}" == "1" ]] && exit 0
 
 # The shim, found through Mapnik's CMake package like for any user of a CMake-installed Mapnik.
+# Mapnik's headers include HarfBuzz, FreeType, Cairo and ICU headers without exporting where they are.
+BREW="$(brew --prefix)"
 cmake -S native -B build/shim-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="$PREFIX;$CMAKE_PREFIX_PATH"
+  -DCMAKE_PREFIX_PATH="$PREFIX;$CMAKE_PREFIX_PATH" \
+  -DCMAKE_CXX_FLAGS="-I$BREW/include -I$BREW/include/freetype2 -I$BREW/include/harfbuzz -I$BREW/include/cairo -I$ICU_ROOT/include"
 cmake --build build/shim-cmake
 ls -l build/native
 
