@@ -17,8 +17,14 @@ public final class Image implements AutoCloseable {
     private Pointer handle;
     private final HandleTracker tracker = HandleTracker.track(this, "Image");
 
+    // An image never changes size, so read it once rather than on every pixel access.
+    private final int width;
+    private final int height;
+
     Image(Pointer handle) {
         this.handle = handle;
+        this.width = N.mapnik_image_width(handle);
+        this.height = N.mapnik_image_height(handle);
     }
 
     /** A new fully transparent image. */
@@ -43,9 +49,15 @@ public final class Image implements AutoCloseable {
         return new Image(p);
     }
 
-    public int width() { return N.mapnik_image_width(ptr()); }
+    public int width() {
+        ptr();
+        return width;
+    }
 
-    public int height() { return N.mapnik_image_height(ptr()); }
+    public int height() {
+        ptr();
+        return height;
+    }
 
     /** The pixel at (x, y) as {@code 0xAARRGGBB}. Throws {@link IndexOutOfBoundsException} if outside the image. */
     public int getArgb(int x, int y) {

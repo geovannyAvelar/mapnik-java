@@ -398,8 +398,17 @@ Text tests need fonts: they use `MAPNIK_FONTS`, or `mapnik-config --fonts`, and 
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 
+## Documentation
+
+- [API documentation](https://geovannyavelar.github.io/mapnik-java/api/) (Javadoc)
+- [Cookbook](docs/COOKBOOK.md): tile server, WMS endpoint, your own data, styling, colouring elevation, debugging an empty map
+- [Performance](docs/PERFORMANCE.md) and the JMH benchmarks in [`benchmarks/`](benchmarks)
+- [Raster data and GDAL](docs/RASTER.md), [Upgrading](docs/MIGRATION.md), [GraalVM notes](docs/GRAALVM.md)
+- [Changelog](CHANGELOG.md), [Contributing](CONTRIBUTING.md), [Security](SECURITY.md)
+
 ## Notes
 
+- Sharing maps between threads: use a `MapPool` (a fixed set of maps; borrow one, draw, give it back). See the cookbook.
 - Threads: `MapnikMap`, `Layer`, `Image`, `Featureset`, `Feature` builders and `Datasource` are not thread-safe. Use one map per thread (or a pool), and do not share an object between threads without your own locking. Several maps may render at the same time. `Projection` and `CoordinateTransform` have not been tested from several threads, so treat them as not thread-safe too. Pure-Java classes (`Geometry`, `Feature`, `Box2d`, `Tiles`, `Style` builders) are immutable or hold no native state.
 - Native memory is not garbage collected. Close everything you create (`MapnikMap`, `Layer`, `Image`, `Datasource`, `Projection`, `Featureset`, `Expression` and so on), ideally with try-with-resources. The library does not free a forgotten handle from the garbage collector, because that could crash the JVM while a native call is still using it. It reports one instead: a warning is logged the first few times, and `Mapnik.leakedHandles()` counts them. Run with `-Dmapnik.leakTrace=true` to see where a leaked handle was created.
 - Call `registerDatasources` and `registerFonts` once at startup, before you load a style that needs them.
