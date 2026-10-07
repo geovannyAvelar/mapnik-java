@@ -143,7 +143,7 @@ for f, refs in rewrites.items():
     for rp in rpaths(f):
         args += ["-delete_rpath", rp]
     if len(args) > 1:
-        run(*args)
+        run(*args, f)
     subprocess.run(["strip", "-x", f], capture_output=True)   # best effort
     run("codesign", "--force", "--sign", "-", f)
 
