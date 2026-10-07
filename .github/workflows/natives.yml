@@ -42,7 +42,7 @@ jobs:
       - name: Read target Mapnik version
         run: echo "MAPNIK_VERSION=$(grep '^mapnik.version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_ENV"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       # Compiles Mapnik, builds the shim against it, and gathers everything into build/natives.
       # The layer cache keeps the long Mapnik compile for later runs.
@@ -99,7 +99,7 @@ jobs:
 
       - name: Restore Mapnik
         id: mapnik-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: build/mapnik-prefix
           key: mapnik-${{ matrix.platform }}-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/macos/build.sh') }}
@@ -110,7 +110,7 @@ jobs:
 
       - name: Save Mapnik
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: build/mapnik-prefix
           key: mapnik-${{ matrix.platform }}-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/macos/build.sh') }}
@@ -155,7 +155,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: natives-${{ matrix.platform }}
           path: build/natives

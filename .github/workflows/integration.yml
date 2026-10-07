@@ -51,7 +51,7 @@ jobs:
       # Building Mapnik takes a while, so cache the installed tree per version.
       - name: Restore Mapnik
         id: mapnik-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/mapnik-install
           key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v3
@@ -69,7 +69,7 @@ jobs:
       # Save right away, so a later failure does not throw the build away.
       - name: Save Mapnik
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/mapnik-install
           key: mapnik-${{ env.MAPNIK_VERSION }}-ubuntu-24.04-v3
