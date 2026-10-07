@@ -42,7 +42,7 @@ jobs:
       - name: Read target Mapnik version
         run: echo "MAPNIK_VERSION=$(grep '^mapnik.version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_ENV"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       # Compiles Mapnik, builds the shim against it, and gathers everything into build/natives.
       # The layer cache keeps the long Mapnik compile for later runs.
