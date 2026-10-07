@@ -45,7 +45,7 @@ public final class MapnikMap implements AutoCloseable {
     /** As {@link #load(Path)}. With {@code strict}, Mapnik reports problems it would otherwise skip, such as unknown attributes. */
     public MapnikMap load(Path styleXml, boolean strict) {
         layerVersion++;
-        Mapnik.check(N.mapnik_map_load(ptr(), styleXml.toString(), strict ? 1 : 0));
+        checkLoad(N.mapnik_map_load(ptr(), styleXml.toString(), strict ? 1 : 0));
         return this;
     }
 
@@ -57,8 +57,28 @@ public final class MapnikMap implements AutoCloseable {
     /** As {@link #loadString(String, Path)}, optionally strict as in {@link #load(Path, boolean)}. */
     public MapnikMap loadString(String xml, Path basePath, boolean strict) {
         layerVersion++;
-        Mapnik.check(N.mapnik_map_load_string(ptr(), xml, basePath == null ? null : basePath.toString(), strict ? 1 : 0));
+        checkLoad(N.mapnik_map_load_string(ptr(), xml, basePath == null ? null : basePath.toString(), strict ? 1 : 0));
         return this;
+    }
+
+    private static void checkLoad(int rc) {
+        if (rc != 0) {
+            throw new MapLoadException(N.mapnik_last_error());
+        }
+    }
+
+    /**
+     * Check a style without keeping it: load it into a throwaway map in strict mode and report what
+     * Mapnik objects to. The list is empty if the style is fine. A strict load stops at the first
+     * kind of failure, so fix what is reported and check again.
+     */
+    public static List<String> validate(String xml, Path basePath) {
+        try (MapnikMap scratch = new MapnikMap(1, 1)) {
+            scratch.loadString(xml, basePath, true);
+            return Collections.emptyList();
+        } catch (MapLoadException e) {
+            return e.problems();
+        }
     }
 
     /** The map as Mapnik XML. With {@code explicitDefaults}, settings at their default value are written too. */

@@ -20,6 +20,19 @@ java {
     withJavadocJar()
 }
 
+// The minimum Java is 8: it still runs on the long-lived servers this library is meant for. Newer JDKs
+// warn that release 8 is obsolete; that is expected.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-options")
+}
+
+tasks.jar {
+    manifest {
+        // A stable module name for the module path until there is a module descriptor.
+        attributes("Automatic-Module-Name" to "dev.avelar.mapnik")
+    }
+}
+
 repositories {
     mavenCentral()
 }
