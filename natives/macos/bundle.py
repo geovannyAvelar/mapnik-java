@@ -19,7 +19,10 @@ out = os.path.abspath(out)
 
 
 def run(*cmd):
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit("ERROR: %s failed (%d):\n%s%s" % (" ".join(cmd), r.returncode, r.stdout, r.stderr))
+    return r.stdout
 
 
 def is_system(ref):
@@ -140,9 +143,9 @@ for f, refs in rewrites.items():
     for rp in rpaths(f):
         args += ["-delete_rpath", rp]
     if len(args) > 1:
-        subprocess.run(args, check=True, capture_output=True)
+        run(*args)
     subprocess.run(["strip", "-x", f], capture_output=True)   # best effort
-    subprocess.run(["codesign", "--force", "--sign", "-", f], check=True, capture_output=True)
+    run("codesign", "--force", "--sign", "-", f)
 
 # Data the libraries look for at run time.
 for f in os.listdir(os.path.join(dejavu, "ttf")):
@@ -210,7 +213,7 @@ for f in list(rewrites):
             bad.append("%s -> %s (missing)" % (os.path.basename(f), ref))
     if rpaths(f):
         bad.append("%s still has rpaths %s" % (os.path.basename(f), rpaths(f)))
-    subprocess.run(["codesign", "--verify", f], check=True, capture_output=True)
+    run("codesign", "--verify", f)
 if bad:
     sys.exit("ERROR: the bundle is not self-contained:\n  " + "\n  ".join(bad))
 
