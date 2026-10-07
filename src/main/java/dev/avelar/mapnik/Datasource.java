@@ -47,6 +47,7 @@ public class Datasource implements AutoCloseable {
     }
 
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "Datasource");
 
     Datasource(Pointer handle) {
         this.handle = handle;
@@ -164,6 +165,7 @@ public class Datasource implements AutoCloseable {
     /** Release this handle. A layer that already uses the datasource keeps its own reference. */
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_datasource_free(handle);
             handle = null;

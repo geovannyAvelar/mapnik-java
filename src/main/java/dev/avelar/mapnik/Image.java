@@ -15,6 +15,7 @@ public final class Image implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "Image");
 
     Image(Pointer handle) {
         this.handle = handle;
@@ -301,6 +302,7 @@ public final class Image implements AutoCloseable {
 
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_image_free(handle);
             handle = null;

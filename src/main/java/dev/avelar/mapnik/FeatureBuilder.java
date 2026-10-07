@@ -13,6 +13,7 @@ final class FeatureBuilder implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
     private final Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "FeatureBuilder");
 
     FeatureBuilder(Feature feature, Map<String, ?> variables) {
         handle = N.mapnik_feature_builder_create(feature.id());
@@ -36,6 +37,7 @@ final class FeatureBuilder implements AutoCloseable {
                 Mapnik.check(N.mapnik_feature_builder_set_geometry_wkb(handle, wkb, wkb.length));
             }
         } catch (RuntimeException e) {
+            tracker.closed();
             N.mapnik_feature_builder_free(handle);
             throw e;
         }
@@ -88,6 +90,7 @@ final class FeatureBuilder implements AutoCloseable {
 
     @Override
     public void close() {
+        tracker.closed();
         N.mapnik_feature_builder_free(handle);
     }
 }

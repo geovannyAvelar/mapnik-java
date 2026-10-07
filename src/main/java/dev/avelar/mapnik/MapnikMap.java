@@ -23,6 +23,7 @@ public final class MapnikMap implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "MapnikMap");
     /** Bumped whenever the native layer list may move, which invalidates {@link Layer} views. */
     private int layerVersion;
 
@@ -779,6 +780,7 @@ public final class MapnikMap implements AutoCloseable {
 
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_map_free(handle);
             handle = null;

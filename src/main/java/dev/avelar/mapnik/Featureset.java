@@ -16,6 +16,7 @@ public final class Featureset implements Iterable<Feature>, Iterator<Feature>, A
     private static final NativeApi N = NativeApi.INSTANCE;
 
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "Featureset");
     private Feature next;
     private boolean done;
     private boolean iterated;
@@ -91,6 +92,7 @@ public final class Featureset implements Iterable<Feature>, Iterator<Feature>, A
 
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_featureset_free(handle);
             handle = null;

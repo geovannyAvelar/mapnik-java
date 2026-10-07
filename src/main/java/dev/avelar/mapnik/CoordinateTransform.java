@@ -7,6 +7,7 @@ public final class CoordinateTransform implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "CoordinateTransform");
 
     private CoordinateTransform(Pointer handle) {
         this.handle = handle;
@@ -90,6 +91,7 @@ public final class CoordinateTransform implements AutoCloseable {
 
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_transform_free(handle);
             handle = null;

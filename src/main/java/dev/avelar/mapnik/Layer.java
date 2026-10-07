@@ -25,11 +25,13 @@ public final class Layer implements AutoCloseable {
     private final MapnikMap parent;   // null for an owned layer
     private final int parentVersion;
     private boolean closed;
+    private final HandleTracker tracker;
 
     private Layer(Pointer handle, MapnikMap parent) {
         this.handle = handle;
         this.parent = parent;
         this.parentVersion = parent == null ? 0 : parent.layerVersion();
+        this.tracker = parent == null ? HandleTracker.track(this, "Layer") : null;
     }
 
     static Layer view(Pointer handle, MapnikMap parent) {
@@ -262,6 +264,9 @@ public final class Layer implements AutoCloseable {
     public void close() {
         if (!closed) {
             closed = true;
+            if (tracker != null) {
+                tracker.closed();
+            }
             if (parent == null) {
                 N.mapnik_layer_free(handle);
             }

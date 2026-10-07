@@ -13,6 +13,7 @@ public final class Projection implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "Projection");
 
     private Projection(Pointer handle) {
         this.handle = handle;
@@ -70,6 +71,7 @@ public final class Projection implements AutoCloseable {
 
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_projection_free(handle);
             handle = null;

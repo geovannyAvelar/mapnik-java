@@ -399,8 +399,8 @@ The `Integration` workflow builds the targeted Mapnik version from source (cache
 
 ## Notes
 
-- `MapnikMap` is not thread-safe. Use one instance per thread, or a pool.
-- Map memory is native and not garbage collected. Always call `close()`, ideally with try-with-resources.
+- Threads: `MapnikMap`, `Layer`, `Image`, `Featureset`, `Feature` builders and `Datasource` are not thread-safe. Use one map per thread (or a pool), and do not share an object between threads without your own locking. Several maps may render at the same time. `Projection` and `CoordinateTransform` are safe to use from several threads only if you do not close them while they are in use. Pure-Java classes (`Geometry`, `Feature`, `Box2d`, `Tiles`, `Style` builders) are immutable or hold no native state.
+- Native memory is not garbage collected. Close everything you create (`MapnikMap`, `Layer`, `Image`, `Datasource`, `Projection`, `Featureset`, `Expression` and so on), ideally with try-with-resources. The library does not free a forgotten handle from the garbage collector, because that could crash the JVM while a native call is still using it. It reports one instead: a warning is logged the first few times, and `Mapnik.leakedHandles()` counts them. Run with `-Dmapnik.leakTrace=true` to see where a leaked handle was created.
 - Call `registerDatasources` and `registerFonts` once at startup, before you load a style that needs them.
 - Only the important public parts of the Mapnik API are wrapped, in phases: see [docs/ROADMAP.md](docs/ROADMAP.md). Adding more means adding a function to `mapnik_c.h` and its `native/src` file, then the matching line in `NativeApi` and a method on the Java class.
 

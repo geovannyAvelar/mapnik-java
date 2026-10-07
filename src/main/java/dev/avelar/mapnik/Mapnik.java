@@ -171,4 +171,13 @@ public final class Mapnik {
         }
         return p.getProperty("mapnik.version", "unknown");
     }
+
+    /**
+     * How many native objects (maps, images, layers and so on) have been garbage collected without
+     * being closed since the JVM started. Each one is a native memory leak. The first few are logged as
+     * warnings; set {@code -Dmapnik.leakTrace=true} to include where they were created.
+     */
+    public static long leakedHandles() {
+        return HandleTracker.leaked();
+    }
 }

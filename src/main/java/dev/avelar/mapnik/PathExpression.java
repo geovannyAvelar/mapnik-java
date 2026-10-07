@@ -12,6 +12,7 @@ public final class PathExpression implements AutoCloseable {
 
     private final String text;
     private Pointer handle;
+    private final HandleTracker tracker = HandleTracker.track(this, "PathExpression");
 
     private PathExpression(String text, Pointer handle) {
         this.text = text;
@@ -45,6 +46,7 @@ public final class PathExpression implements AutoCloseable {
 
     @Override
     public void close() {
+        tracker.closed();
         if (handle != null) {
             N.mapnik_path_expression_free(handle);
             handle = null;
