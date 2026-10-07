@@ -25,6 +25,11 @@ loaded, and for each request borrow one, point it at the tile and draw.
 MapPool pool = new MapPool(Runtime.getRuntime().availableProcessors(), 256, 256,
     map -> map.load(Paths.get("style.xml")).setSrs("epsg:3857"));
 
+// For a server, also set how long a request may wait, and draw once on each map before taking traffic:
+//   MapPool.builder(n, 256, 256).setup(...).warmup(m -> m.zoomToBox(Tiles.bounds(0, 0, 0)).renderToPng())
+//       .maxWait(2, TimeUnit.SECONDS).build();
+// A request that waits longer gets MapPool.ExhaustedException: answer 503. pool.stats() reports how busy it is.
+
 byte[] tile(int z, int x, int y) {
     Tiles.Tile tile = new Tiles.Tile(z, x, y);          // throws IllegalArgumentException if off the grid
     return pool.withMap(map -> map.zoomToBox(tile.bounds()).renderToPng());

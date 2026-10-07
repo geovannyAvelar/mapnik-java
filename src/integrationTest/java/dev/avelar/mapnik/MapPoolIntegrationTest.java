@@ -100,4 +100,77 @@ class MapPoolIntegrationTest {
         lease.close();
         assertThrows(IllegalArgumentException.class, () -> new MapPool(0, 8, 8, m -> { }));
     }
+
+    @Test
+    void statsCountBorrowsWaitsAndTimeouts() throws Exception {
+        try (MapPool pool = new MapPool(2, 8, 8, m -> m.loadString(STYLE, null))) {
+            assertEquals(0, pool.stats().borrows());
+            try (MapPool.Lease a = pool.borrow(); MapPool.Lease b = pool.borrow()) {
+                MapPool.Stats busy = pool.stats();
+                assertEquals(2, busy.size());
+                assertEquals(2, busy.borrowed());
+                assertEquals(0, busy.available());
+                assertEquals(2, busy.borrows());
+                assertThrows(TimeoutException.class, () -> pool.borrow(50, TimeUnit.MILLISECONDS));
+            }
+            MapPool.Stats after = pool.stats();
+            assertEquals(1, after.timeouts());
+            assertEquals(0, after.borrowed());
+            assertEquals(0, after.waiting());
+            assertTrue(after.toString().contains("2 borrows"), after.toString());
+        }
+    }
+
+    @Test
+    void aWaitingCallerIsCountedAndTheWaitIsMeasured() throws Exception {
+        try (MapPool pool = new MapPool(1, 8, 8, m -> m.loadString(STYLE, null))) {
+            ExecutorService one = Executors.newSingleThreadExecutor();
+            try {
+                MapPool.Lease held = pool.borrow();
+                Future<?> waiter = one.submit(() -> pool.borrow().close());
+                for (int i = 0; i < 200 && pool.stats().waiting() == 0; i++) {
+                    Thread.sleep(10);
+                }
+                assertEquals(1, pool.stats().waiting());
+                Thread.sleep(100);
+                held.close();
+                waiter.get(5, TimeUnit.SECONDS);
+                MapPool.Stats s = pool.stats();
+                assertEquals(2, s.borrows());
+                assertTrue(s.longestWaitNanos() >= TimeUnit.MILLISECONDS.toNanos(100), "waited: " + s);
+            } finally {
+                one.shutdownNow();
+            }
+        }
+    }
+
+    @Test
+    void aMaximumWaitMakesBorrowFailInsteadOfBlocking() {
+        try (MapPool pool = MapPool.builder(1, 8, 8).setup(m -> m.loadString(STYLE, null)).maxWait(80, TimeUnit.MILLISECONDS).build()) {
+            try (MapPool.Lease held = pool.borrow()) {
+                long start = System.nanoTime();
+                MapPool.ExhaustedException e = assertThrows(MapPool.ExhaustedException.class, () -> pool.withMap(m -> "x"));
+                long ms = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+                assertTrue(ms >= 70 && ms < 2000, "waited about the limit: " + ms);
+                assertTrue(e.getMessage().contains("busy"), e.getMessage());
+                assertNotNull(held.map());
+            }
+            assertEquals("ok", pool.withMap(m -> "ok"));
+            assertEquals(1, pool.stats().timeouts());
+        }
+    }
+
+    @Test
+    void warmupRunsOnEveryMapAfterSetupAndFailureStopsTheBuild() {
+        List<String> order = java.util.Collections.synchronizedList(new ArrayList<String>());
+        try (MapPool pool = MapPool.builder(3, 8, 8)
+            .setup(m -> { m.loadString(STYLE, null); order.add("setup"); })
+            .warmup(m -> { m.zoomToBox(-1, -1, 1, 1); m.renderToPng().getClass(); order.add("warmup"); })
+            .build()) {
+            assertEquals(3, pool.size());
+        }
+        assertEquals(java.util.Arrays.asList("setup", "warmup", "setup", "warmup", "setup", "warmup"), order);
+        assertThrows(IllegalStateException.class, () -> MapPool.builder(2, 8, 8)
+            .setup(m -> m.loadString(STYLE, null)).warmup(m -> { throw new IllegalStateException("cold"); }).build());
+    }
 }

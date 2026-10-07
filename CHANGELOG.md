@@ -12,7 +12,7 @@ First release, for Mapnik 4.3.2.
 - Expressions, path expressions, logging control, capabilities.
 - Prebuilt natives for Linux x86_64 and aarch64 (glibc 2.39 or later) and macOS Apple Silicon and Intel, self-contained: `mapnik-java-natives-linux-x86_64`, `-linux-aarch64`, `-macos-aarch64`, `-macos-x86_64`.
 - Leak detection for native handles that are garbage collected without `close()`.
-- `MapPool`, a fixed set of maps shared by many threads.
+- `MapPool`, a fixed set of maps shared by many threads, with a builder (warm-up, maximum wait) and `stats()` (borrows, waiting, timeouts, wait times).
 - `MapLoadException` with the line, style, layer and element of a style problem, and `MapnikMap.validate` to check a style without keeping it.
 - `RasterGrid`: reads GeoTIFF and Esri ASCII grids in pure Java (strips, tiles, deflate, LZW, PackBits, predictors, 8 to 64-bit samples, extent and EPSG from the tags), tested against files written by GDAL.
 - `GrayImage`: single-band images (8 to 64-bit integers, 32 and 64-bit floats) coloured with a `RasterColorizer`, no GDAL needed.
