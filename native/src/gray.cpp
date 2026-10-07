@@ -1,12 +1,10 @@
 #include "common.hpp"
 
 #include <mapnik/color.hpp>
-#include <mapnik/feature_factory.hpp>
 #include <mapnik/image.hpp>
 #include <mapnik/image_any.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/raster_colorizer.hpp>
-#include <mapnik/util/variant.hpp>
 
 #include <cmath>
 #include <limits>
@@ -80,18 +78,6 @@ double get_any(mapnik::image_any const& im, std::size_t x, std::size_t y) {
         default: throw std::invalid_argument("not a single-band image");
     }
 }
-
-struct colorize_visitor {
-    mapnik::image_rgba8& out;
-    mapnik::raster_colorizer const& colorizer;
-    std::optional<double> const& nodata;
-    mapnik::feature_impl const& feature;
-
-    template <typename T>
-    void operator()(T const& in) const { colorizer.colorize(out, in, nodata, feature); }
-    void operator()(mapnik::image_rgba8 const&) const { throw std::invalid_argument("not a single-band image"); }
-    void operator()(mapnik::image_null const&) const { throw std::invalid_argument("empty image"); }
-};
 
 mapnik::colorizer_mode_enum mode_of(int m) {
     switch (m) {
@@ -195,13 +181,20 @@ mapnik_image_t* mapnik_gray_colorize(mapnik_gray_t* g, const double* values, con
             colorizer->add_stop(mapnik::colorizer_stop(static_cast<float>(values[i]), mode_of(modes[i]), mapnik::color(static_cast<unsigned int>(rgba[i]))));
         }
         if (epsilon > 0) colorizer->set_epsilon(static_cast<float>(epsilon));
-        mapnik::image_rgba8 img(static_cast<int>(g->image.width()), static_cast<int>(g->image.height()));
+        // Mapnik's own loop is a member template that some platforms do not export, so do the same
+        // per pixel with get_color, which is public. Nodata is transparent, as in Mapnik.
+        const int w = static_cast<int>(g->image.width()), h = static_cast<int>(g->image.height());
+        mapnik::image_rgba8 img(w, h);
         img.set(0);
-        auto ctx = std::make_shared<mapnik::context_type>();
-        mapnik::feature_ptr feature = mapnik::feature_factory::create(ctx, 1);
-        std::optional<double> nd;
-        if (has_nodata) nd = nodata;
-        mapnik::util::apply_visitor(colorize_visitor{img, *colorizer, nd, *feature}, g->image);
+        const double eps = colorizer->get_epsilon();
+        for (int y = 0; y < h; ++y) {
+            auto* row = img.get_row(y);
+            for (int x = 0; x < w; ++x) {
+                const double v = get_any(g->image, x, y);
+                if (has_nodata && std::fabs(v - nodata) < eps) row[x] = 0;
+                else row[x] = colorizer->get_color(static_cast<float>(v));
+            }
+        }
         img.set_premultiplied(false);
         out = new mapnik_image(std::move(img));
     });
