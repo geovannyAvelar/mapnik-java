@@ -145,6 +145,23 @@ check real output, such as pixels and XML.
 - macOS is built on Mac runners with Homebrew libraries (`natives/macos/build.sh`, `bundle.py`): install names are rewritten to `@loader_path`, files are signed ad hoc, and a second fresh runner runs the integration tests.
 - Not done: Windows, a smaller bundle (libproj pulls in curl and gnutls).
 
+## Features added after the first plan
+
+- `RasterGrid`: GeoTIFF and Esri ASCII grid reading in pure Java.
+- `MapPool` builder (warm-up, maximum wait) and `stats()`.
+- Vector tiles: `Datasource.mbtiles`, `pmtiles` and `tilesFromUrl`, through Mapnik's `tiles` input plugin.
+- Typed text placement helpers on `Symbolizer` (label placement, positions and fallback sizes, wrapping,
+  alignment, line labels), checked by Mapnik's strict loader.
+
+## Looked at and left out
+
+- **Collision detector queries.** Mapnik's label collision detector is an internal part of its renderers,
+  not something a map exposes; there is nothing meaningful to wrap.
+- **Transliteration.** Mapnik has no transliteration feature (only `text-transform` for case). Use
+  `java.text.Normalizer` or ICU4J on your attribute values before they reach Mapnik.
+- **Writing vector tiles.** Mapnik core reads vector tiles but does not produce them; the separate
+  mapnik-vector-tile project does.
+
 ## Later
 
-Collision detector queries, transliteration, raster colorizer and text placement options not covered by a builder (use `Symbolizer.child` with raw XML), and anything users ask for.
+GDAL/OGR and PostGIS natives as optional extra artifacts, and anything users ask for.

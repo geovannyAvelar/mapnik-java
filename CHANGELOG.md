@@ -15,6 +15,8 @@ First release, for Mapnik 4.3.2.
 - `MapPool`, a fixed set of maps shared by many threads, with a builder (warm-up, maximum wait) and `stats()` (borrows, waiting, timeouts, wait times).
 - `MapLoadException` with the line, style, layer and element of a style problem, and `MapnikMap.validate` to check a style without keeping it.
 - `RasterGrid`: reads GeoTIFF and Esri ASCII grids in pure Java (strips, tiles, deflate, LZW, PackBits, predictors, 8 to 64-bit samples, extent and EPSG from the tags), tested against files written by GDAL.
+- Vector tiles: `Datasource.mbtiles`, `pmtiles` and `tilesFromUrl`, reading MVT through the `tiles` input plugin.
+- Typed text placement helpers on `Symbolizer`: label placement, positions with fallback sizes, wrapping, alignment, line labels.
 - `GrayImage`: single-band images (8 to 64-bit integers, 32 and 64-bit floats) coloured with a `RasterColorizer`, no GDAL needed.
 - JMH benchmarks in `benchmarks/`, and guides: cookbook, performance, raster and GDAL, upgrading, GraalVM notes.
 - `Automatic-Module-Name: dev.avelar.mapnik`. The minimum Java is 8.

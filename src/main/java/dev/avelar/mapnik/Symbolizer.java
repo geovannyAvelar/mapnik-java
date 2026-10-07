@@ -242,6 +242,154 @@ public final class Symbolizer {
     /** Text: the font size in pixels. */
     public Symbolizer fontSize(double v) { return attr("size", v); }
 
+    // ---------------------------------------------------------------- text placement
+
+    /** Where labels go relative to the geometry. */
+    public enum LabelPlacement {
+        /** At a point on the geometry (the centroid of a polygon, the middle of a line). */
+        POINT("point"),
+        /** Along a line, following it. */
+        LINE("line"),
+        /** At each vertex. */
+        VERTEX("vertex"),
+        /** Inside a polygon, at a point that is certainly inside. */
+        INTERIOR("interior"),
+        /** At the pole of inaccessibility of a polygon: the point farthest from its edges. */
+        POLYLABEL("polylabel"),
+        /** On a regular grid across a polygon. */
+        GRID("grid"),
+        /** On a grid with every other row shifted. */
+        ALTERNATING_GRID("alternating-grid");
+
+        final String xml;
+
+        LabelPlacement(String xml) {
+            this.xml = xml;
+        }
+    }
+
+    /** Which placements to try for a label, in order, when the first does not fit. */
+    public enum Position {
+        NORTH("N"), EAST("E"), SOUTH("S"), WEST("W"), NORTH_EAST("NE"), SOUTH_EAST("SE"), NORTH_WEST("NW"),
+        SOUTH_WEST("SW"), EXACT("X");
+
+        final String xml;
+
+        Position(String xml) {
+            this.xml = xml;
+        }
+    }
+
+    /** Text and shields: where labels go: along a line, at a point, inside a polygon and so on. */
+    public Symbolizer labelPlacement(LabelPlacement placement) { return attr("placement", placement.xml); }
+
+    /**
+     * Text: try these positions around the point in turn until a label fits, for example
+     * {@code positions(Position.NORTH_EAST, Position.SOUTH_EAST, Position.EXACT)}. Add smaller
+     * font sizes to fall back to with {@link #placementSizes}.
+     */
+    public Symbolizer positions(Position... positions) {
+        if (positions.length == 0) {
+            throw new IllegalArgumentException("no positions given");
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Position p : positions) {
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(p.xml);
+        }
+        return attr("placement-type", "simple").attr("placements", sb.toString());
+    }
+
+    /**
+     * Text: if a label does not fit at any position, try again at these smaller font sizes, in whole pixels
+     * and largest first. Mapnik tries every position at each size. Call {@link #positions} first.
+     */
+    public Symbolizer placementSizes(int... sizes) {
+        if (sizes.length == 0) {
+            throw new IllegalArgumentException("no sizes given");
+        }
+        String positions = attributes.get("placements");
+        if (positions == null) {
+            throw new IllegalStateException("set positions(...) before placementSizes(...)");
+        }
+        StringBuilder sb = new StringBuilder(positions);
+        for (int size : sizes) {
+            if (size <= 0) {
+                throw new IllegalArgumentException("a font size must be positive: " + size);
+            }
+            sb.append(',').append(size);
+        }
+        return attr("placements", sb.toString());
+    }
+
+    /**
+     * Text: keep labels this many pixels away from other labels with the same text. (Mapnik's older
+     * {@code minimum-distance} is deprecated and refuses to combine with {@link #repeatDistance}.)
+     */
+    public Symbolizer margin(double pixels) { return attr("margin", pixels); }
+
+    /** Text: keep labels this many pixels away from the edge of the map or tile. */
+    public Symbolizer minimumPadding(double pixels) { return attr("minimum-padding", pixels); }
+
+    /** Text: do not draw labels that would be cut by the edge of the map or tile. */
+    public Symbolizer avoidEdges(boolean v) { return attr("avoid-edges", v); }
+
+    /** Text on lines: repeat the label every this many pixels along the line. */
+    public Symbolizer repeatDistance(double pixels) { return attr("repeat-distance", pixels); }
+
+    /** Text on lines: distance between labels along a line, in pixels. */
+    public Symbolizer labelSpacing(double pixels) { return attr("spacing", pixels); }
+
+    /** Text on lines: skip lines shorter than this many pixels. */
+    public Symbolizer minimumPathLength(double pixels) { return attr("minimum-path-length", pixels); }
+
+    /** Text on lines: the largest angle in degrees between two letters, so labels do not bend sharply. */
+    public Symbolizer maxCharAngleDelta(double degrees) { return attr("max-char-angle-delta", degrees); }
+
+    /** Text: how far in pixels a label may move along a line to find room. */
+    public Symbolizer labelPositionTolerance(double pixels) { return attr("label-position-tolerance", pixels); }
+
+    /** Text: label only the largest part of a multipart geometry. */
+    public Symbolizer largestBoxOnly(boolean v) { return attr("largest-bbox-only", v); }
+
+    /** Markers, points and shields (not text): draw without making room for it, so it never blocks later labels. */
+    public Symbolizer ignorePlacement(boolean v) { return attr("ignore-placement", v); }
+
+    /** Text: wrap lines longer than this many pixels. */
+    public Symbolizer wrapWidth(double pixels) { return attr("wrap-width", pixels); }
+
+    /** Text: the character to wrap at, a space by default. */
+    public Symbolizer wrapCharacter(String character) { return attr("wrap-character", character); }
+
+    /** Text: wrap before the wrap character instead of after it. */
+    public Symbolizer wrapBefore(boolean v) { return attr("wrap-before", v); }
+
+    /** Text: how lines of a wrapped label line up with each other: {@code left}, {@code center}, {@code right} or {@code auto}. */
+    public Symbolizer justify(String alignment) { return attr("justify-alignment", alignment); }
+
+    /** Text: horizontal alignment of the label to its position: {@code left}, {@code middle}, {@code right}, {@code auto} or {@code adjust}. */
+    public Symbolizer horizontalAlignment(String alignment) { return attr("horizontal-alignment", alignment); }
+
+    /** Text: vertical alignment of the label to its position: {@code top}, {@code middle}, {@code bottom} or {@code auto}. */
+    public Symbolizer verticalAlignment(String alignment) { return attr("vertical-alignment", alignment); }
+
+    /** Text on lines: which way up the letters stand: {@code auto}, {@code auto-down}, {@code left}, {@code right}, {@code left-only} or {@code right-only}. */
+    public Symbolizer upright(String upright) { return attr("upright", upright); }
+
+    /** Text: shift the label by this many pixels. Positive x is right and positive y is down. */
+    public Symbolizer displacement(double dx, double dy) { return attr("dx", dx).attr("dy", dy); }
+
+    /** Text: turn the label by this many degrees clockwise. */
+    public Symbolizer rotation(double degrees) { return attr("orientation", degrees); }
+
+    /** Text: change the case of the label: {@code none}, {@code uppercase}, {@code lowercase}, {@code capitalize} or {@code reverse}. */
+    public Symbolizer textTransform(String transform) { return attr("text-transform", transform); }
+
+    /** Text: OpenType features, for example {@code "liga=0, smcp"}. */
+    public Symbolizer fontFeatureSettings(String settings) { return attr("font-feature-settings", settings); }
+
     /** Text: outline colour and width. */
     public Symbolizer halo(String color, double radius) { return attr("halo-fill", color).attr("halo-radius", radius); }
 

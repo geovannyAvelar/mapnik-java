@@ -131,6 +131,10 @@ Style labels = Style.create("labels").add(Rule.create().maxScaleDenominator(5000
     Symbolizer.text("[name]").faceName("DejaVu Sans Book").fontSize(12).fill("black").halo("white", 2)));
 ```
 
+Placement is controlled with typed helpers: `labelPlacement(Symbolizer.LabelPlacement.LINE)` for labels along
+roads, `positions(NORTH_EAST, SOUTH_EAST, ...)` and `placementSizes(12, 10, 8)` to try other spots and smaller
+sizes when a point label does not fit, `wrapWidth`, `avoidEdges`, `repeatDistance` and more.
+
 `MapnikMap.addStyle` loads in strict mode, so an unknown font fails right there instead of drawing no
 text. `Mapnik.fontFaces()` lists the faces Mapnik knows.
 
@@ -141,3 +145,20 @@ text. `Mapnik.fontFaces()` lists the faces Mapnik knows.
    as the prebuilt natives are; check `Mapnik.supports(Capability.LOGGING)`).
 3. Check the layer: `layer.envelope()` against `map.extent()`, and the layer's `srs` against the data's.
 4. Check scale: `map.scaleDenominator()` against the rules' min and max scale denominators.
+
+## Vector tiles
+
+Mapnik reads Mapnik Vector Tiles (MVT) from MBTiles, PMTiles and tile servers through its `tiles` input
+plugin, which the prebuilt natives include:
+
+```java
+try (Datasource ds = Datasource.mbtiles(Paths.get("world.mbtiles"), "places");   // the tile layer to draw
+     Layer layer = Layer.create("places", "epsg:3857")) {                         // tiles are Web Mercator
+    layer.addStyle("s").setDatasource(ds);
+    map.addLayer(layer);
+}
+```
+
+`Datasource.pmtiles` does the same for a PMTiles archive, and `Datasource.tilesFromUrl("http://host/{z}/{x}/{y}.pbf", "layer")`
+reads from a server (HTTP only in the prebuilt natives). The attributes of the tile features are available
+to filters and labels. Mapnik cannot write vector tiles.
