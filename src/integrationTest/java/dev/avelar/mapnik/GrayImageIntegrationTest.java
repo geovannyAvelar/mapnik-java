@@ -131,4 +131,33 @@ class GrayImageIntegrationTest {
         g.close();
         assertThrows(IllegalStateException.class, g::width);
     }
+
+    @Test
+    void aGeoTiffBecomesAColouredPicture() throws Exception {
+        java.nio.file.Path tif = java.nio.file.Paths.get("src/test/resources/geotiff/f32_deflate_p3_tiled.tif");
+        RasterGrid grid = RasterGrid.read(tif);
+        double nodata = grid.noData().getAsDouble();
+        double[] range = grid.range();
+        RasterColorizer ramp = RasterColorizer.create().stop(range[0], "#000000").stop(range[1], "#ffffff");
+        try (GrayImage g = grid.toGrayImage(); Image img = g.colorize(ramp, nodata)) {
+            assertEquals(GrayImage.Type.FLOAT32, g.type());
+            assertEquals(64, img.width());
+            assertEquals(48, img.height());
+            assertArrayEquals(grid.values(), g.read());
+            int missing = 0;
+            for (int y = 0; y < 48; y++) {
+                for (int x = 0; x < 64; x++) {
+                    double v = grid.get(x, y);
+                    int argb = img.getArgb(x, y);
+                    if (v == nodata) {
+                        missing++;
+                        assertEquals(0, argb >>> 24, "nodata is transparent at " + x + "," + y);
+                    } else {
+                        assertEquals(255, argb >>> 24);
+                    }
+                }
+            }
+            assertTrue(missing > 10, "the fixture has no-data cells: " + missing);
+        }
+    }
 }

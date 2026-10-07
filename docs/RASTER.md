@@ -7,6 +7,7 @@ The prebuilt natives include Mapnik's `raster` input plugin and no GDAL. That gi
 - **Georeferenced images.** The `raster` plugin draws an image file (PNG, JPEG, TIFF or WebP) at the
   extent you give in the datasource parameters (`lox`, `loy`, `hix`, `hiy`). Use it for scanned maps
   and pre-rendered imagery.
+- **GeoTIFF and ASCII grids.** `RasterGrid` reads them in pure Java (see below).
 - **Elevation and other single-band data you already hold as numbers.** Put it in a `GrayImage`
   (8, 16, 32 and 64-bit integers, or 32 and 64-bit floats), colour it with a `RasterColorizer` and you
   get an RGBA `Image`. No GDAL is involved. See the elevation recipe in [COOKBOOK.md](COOKBOOK.md).
@@ -14,8 +15,8 @@ The prebuilt natives include Mapnik's `raster` input plugin and no GDAL. That gi
 
 ## What needs GDAL
 
-- Reading **GeoTIFF**, DEM, ASCII grid and other raster formats directly, with their georeferencing,
-  nodata values and band layout.
+- Reading raster formats other than GeoTIFF and ASCII grid, files over 100 million pixels, BigTIFF, JPEG-compressed
+  TIFF, and bands other than the first.
 - Reading vector formats through OGR (GeoPackage, file geodatabases and so on). The `shape`, `geojson`,
   `csv`, `topojson`, `geobuf` and `sqlite` plugins are bundled and need no GDAL.
 
@@ -46,9 +47,25 @@ try (Datasource ds = Datasource.create(params);
 
 `Symbolizer.raster().colorizer(RasterColorizer)` colours a band by value when drawing a map.
 
-## Reading a GeoTIFF without GDAL
+## Reading GeoTIFF and ASCII grids without GDAL
 
-`Image.load(Path)` reads a TIFF that Mapnik's reader supports, typically 8-bit RGB or RGBA, as RGBA.
-For elevation in 16-bit or floating point, read the values with a library you already use (for example
-the JDK's ImageIO with a TIFF plugin, or a GeoTIFF reader), fill a `GrayImage` with
-`GrayImage.of(...)` and draw it with the colorizer. This keeps the native dependencies small.
+`RasterGrid` reads them in pure Java:
+
+```java
+RasterGrid dem = RasterGrid.read(Paths.get("dem.tif"));     // or .asc
+dem.extent();        // Box2d in the file's projection, from the GeoTIFF tags
+dem.srs();           // "epsg:4326", or null if the file has none
+dem.noData();        // OptionalDouble
+try (GrayImage g = dem.toGrayImage()) {                     // the file's own pixel type
+    Image picture = ramp.colorize(g);
+}
+```
+
+Supported: classic TIFF (not BigTIFF), strips or tiles, 8, 16, 32 and 64-bit samples (unsigned, signed,
+floating point), compression none, deflate, LZW and PackBits, the horizontal and floating-point
+predictors, and the first band. The extent and EPSG code come from the GeoTIFF tags. Esri ASCII grids
+(`.asc`) are read too. Anything else (JPEG or other compression, BigTIFF, rotated grids) is refused with
+an `IllegalArgumentException` that says why, and damaged files do the same, never anything worse.
+
+A grid is limited to 100 million pixels, because it holds `double`s. For larger files, or other
+formats, use the GDAL plugin as above.

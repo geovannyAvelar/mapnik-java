@@ -102,20 +102,22 @@ to point at the fault.
 
 ## Colour elevation data (no GDAL)
 
-Hold the grid in a `GrayImage` and colour it with a `RasterColorizer`:
+Read a GeoTIFF or ASCII grid with `RasterGrid`, or hold your own numbers in a `GrayImage`, and colour it
+with a `RasterColorizer`:
 
 ```java
-try (GrayImage dem = GrayImage.of(GrayImage.Type.FLOAT32, 256, 256, heights)) {   // row by row from the top left
-    double[] range = dem.range(-9999);                                           // ignoring the nodata value
+RasterGrid grid = RasterGrid.read(Paths.get("dem.tif"));
+try (GrayImage dem = grid.toGrayImage()) {
+    double[] range = grid.range();                                               // ignores no-data and NaN
     RasterColorizer ramp = RasterColorizer.create()
         .stop(range[0], "#2b83ba").stop((range[0] + range[1]) / 2, "#ffffbf").stop(range[1], "#d7191c");
-    try (Image picture = dem.colorize(ramp, -9999.0)) {
+    try (Image picture = dem.colorize(ramp, grid.noData().orElse(Double.NaN))) {
         Files.write(Paths.get("dem.png"), picture.toPng());
     }
 }
 ```
 
-Reading elevation from a GeoTIFF still needs the GDAL input plugin: see [RASTER.md](RASTER.md).
+Formats `RasterGrid` does not read need the GDAL input plugin: see [RASTER.md](RASTER.md).
 
 ## Labels and text
 

@@ -14,6 +14,7 @@ First release, for Mapnik 4.3.2.
 - Leak detection for native handles that are garbage collected without `close()`.
 - `MapPool`, a fixed set of maps shared by many threads.
 - `MapLoadException` with the line, style, layer and element of a style problem, and `MapnikMap.validate` to check a style without keeping it.
+- `RasterGrid`: reads GeoTIFF and Esri ASCII grids in pure Java (strips, tiles, deflate, LZW, PackBits, predictors, 8 to 64-bit samples, extent and EPSG from the tags), tested against files written by GDAL.
 - `GrayImage`: single-band images (8 to 64-bit integers, 32 and 64-bit floats) coloured with a `RasterColorizer`, no GDAL needed.
 - JMH benchmarks in `benchmarks/`, and guides: cookbook, performance, raster and GDAL, upgrading, GraalVM notes.
 - `Automatic-Module-Name: dev.avelar.mapnik`. The minimum Java is 8.
