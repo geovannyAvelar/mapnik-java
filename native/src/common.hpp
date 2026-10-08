@@ -4,6 +4,7 @@
 #include "../mapnik_c.h"
 
 #include <mapnik/datasource.hpp>
+#include <mapnik/mapnik.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/featureset.hpp>
 #include <mapnik/geometry/box2d.hpp>
@@ -20,6 +21,7 @@
 #include <mapnik/geometry.hpp>
 #include <mapnik/value.hpp>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -83,9 +85,17 @@ inline mapnik_layer_t* H(mapnik::layer* l) { return reinterpret_cast<mapnik_laye
 // Turn a builder into a real Mapnik feature.
 mapnik::feature_ptr build_feature(mapnik_feature_builder_t* b);
 
+// Mapnik registers its image readers in setup(). Elsewhere it runs by itself when the library loads; on
+// Windows it never does, and without it reading an image dereferences a null reader. It is safe to call again.
+inline void ensure_setup() {
+    static std::once_flag once;
+    std::call_once(once, [] { mapnik::setup(); });
+}
+
 template <typename F>
 int guarded(F&& f) {
     try {
+        ensure_setup();
         f();
         return 0;
     } catch (std::exception const& e) {
