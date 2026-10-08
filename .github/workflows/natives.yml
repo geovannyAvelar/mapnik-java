@@ -247,7 +247,7 @@ jobs:
       run:
         shell: bash
     env:
-      PLATFORM: windows-x86_64
+      NATIVES_PLATFORM: windows-x86_64
 
     steps:
       - uses: actions/checkout@v7
@@ -274,7 +274,7 @@ jobs:
             vcpkg-windows-${{ env.MAPNIK_VERSION }}-
 
       - name: Build the dependencies
-        run: STOP_AFTER=deps natives/windows/build.sh ${{ env.PLATFORM }}
+        run: STOP_AFTER=deps natives/windows/build.sh ${{ env.NATIVES_PLATFORM }}
 
       # Saved right away, so a later failure does not throw hours of dependency builds away.
       - name: Save the vcpkg binary cache
@@ -293,7 +293,7 @@ jobs:
 
       - name: Build Mapnik
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
-        run: STOP_AFTER=mapnik natives/windows/build.sh ${{ env.PLATFORM }}
+        run: STOP_AFTER=mapnik natives/windows/build.sh ${{ env.NATIVES_PLATFORM }}
 
       - name: Save Mapnik
         if: steps.mapnik-cache.outputs.cache-hit != 'true'
@@ -303,16 +303,16 @@ jobs:
           key: mapnik-windows-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/windows/build.sh') }}
 
       - name: Build the shim and the bundle
-        run: natives/windows/build.sh ${{ env.PLATFORM }}
+        run: natives/windows/build.sh ${{ env.NATIVES_PLATFORM }}
 
       - name: What was built
         run: |
-          ls -la build/natives/${{ env.PLATFORM }} build/natives/${{ env.PLATFORM }}/lib | head -80
-          cat build/natives/${{ env.PLATFORM }}/NOTICE
+          ls -la build/natives/${{ env.NATIVES_PLATFORM }} build/natives/${{ env.NATIVES_PLATFORM }}/lib | head -80
+          cat build/natives/${{ env.NATIVES_PLATFORM }}/NOTICE
 
       - uses: actions/upload-artifact@v6
         with:
-          name: natives-${{ env.PLATFORM }}
+          name: natives-${{ env.NATIVES_PLATFORM }}
           path: build/natives
           retention-days: 14
 
