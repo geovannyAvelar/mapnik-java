@@ -278,7 +278,7 @@ jobs:
 
       # Saved right away, so a later failure does not throw hours of dependency builds away.
       - name: Save the vcpkg binary cache
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: build/vcpkg-binary-cache
