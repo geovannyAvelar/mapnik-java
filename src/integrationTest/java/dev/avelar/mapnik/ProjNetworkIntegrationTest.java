@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,6 +52,8 @@ class ProjNetworkIntegrationTest {
     @Test
     void theNetworkLetsPROJUseTheGridItLacks() throws Exception {
         assumeTrue(Mapnik.isBundled(), "needs the bundle, which has PROJ with network support");
+        assumeTrue(!Files.exists(Mapnik.bundledDirectory().resolve("proj").resolve("us_noaa_conus.tif")),
+            "this bundle already carries the grid, so there is nothing for the network to add");
         assumeTrue(cdnReachable(), "cdn.proj.org is not reachable from here");
         Mapnik.enableProjNetwork(false);
         Point2d approximate = transformed();
