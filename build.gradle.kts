@@ -384,7 +384,10 @@ nmcpAggregation {
     centralPortal {
         username = System.getenv("SONATYPE_USERNAME") ?: ""
         password = System.getenv("SONATYPE_PASSWORD") ?: ""
-        publishingType = "AUTOMATIC"
+        // AUTOMATIC releases as soon as Central has validated the deployment. USER_MANAGED stops after
+        // validation, and the release is finished by hand in the Central Portal: set CENTRAL_PUBLISHING_TYPE
+        // to it for a first release, since a release on Central can never be taken back.
+        publishingType = System.getenv("CENTRAL_PUBLISHING_TYPE")?.takeIf { it.isNotBlank() } ?: "AUTOMATIC"
     }
 }
 

@@ -6,3 +6,4 @@
 - Wrap every native call that can throw in `guarded()` in the shim, and free every handle you create.
 - Close native handles in Java, in tests too. The suite runs with leak detection and should report none.
 - Use Conventional Commits (`feat:`, `fix:`, `docs:`).
+- Releasing: see [docs/RELEASING.md](docs/RELEASING.md).

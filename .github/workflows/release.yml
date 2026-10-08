@@ -67,4 +67,7 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          # Set the repository variable CENTRAL_PUBLISHING_TYPE to USER_MANAGED to stop after Central's
+          # validation and finish the release by hand in the portal. Unset means AUTOMATIC.
+          CENTRAL_PUBLISHING_TYPE: ${{ vars.CENTRAL_PUBLISHING_TYPE }}
         run: ./gradlew publishAggregationToCentralPortal
