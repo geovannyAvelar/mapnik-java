@@ -3,6 +3,11 @@ name: Natives
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      linux-only:
+        description: Build and test only the Linux bundles (to work on them without running macOS and Windows)
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -195,6 +200,7 @@ jobs:
   # macOS has no containers: build on a Mac runner, with Homebrew supplying Mapnik's dependencies.
   macos:
     name: ${{ matrix.label }} bundle
+    if: ${{ !inputs.linux-only }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     strategy:
@@ -249,6 +255,7 @@ jobs:
   # A second, fresh Mac that never built anything: the integration tests must pass with the bundle alone.
   macos-test:
     name: ${{ matrix.label }} test
+    if: ${{ !inputs.linux-only }}
     needs: macos
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
@@ -285,6 +292,7 @@ jobs:
   # and the Mapnik install are cached for the runs after.
   windows:
     name: Windows x86_64 bundle
+    if: ${{ !inputs.linux-only }}
     runs-on: windows-2022
     timeout-minutes: 360
     defaults:
@@ -364,6 +372,7 @@ jobs:
   # A second, fresh Windows machine that built nothing: the integration tests must pass with the bundle alone.
   windows-test:
     name: Windows x86_64 test
+    if: ${{ !inputs.linux-only }}
     needs: windows
     runs-on: windows-2022
     timeout-minutes: 60
