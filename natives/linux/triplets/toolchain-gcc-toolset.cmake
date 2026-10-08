@@ -8,3 +8,11 @@ if(NOT MAPNIK_GCC OR NOT MAPNIK_GXX)
 endif()
 set(CMAKE_C_COMPILER "${MAPNIK_GCC}" CACHE FILEPATH "" FORCE)
 set(CMAKE_CXX_COMPILER "${MAPNIK_GXX}" CACHE FILEPATH "" FORCE)
+
+# vcpkg's own Linux toolchain sets the processor from the triplet; this one replaces it, and CMake does not detect
+# it once a toolchain names the system. Boost.Context, for one, then picks x86-64 assembly on an ARM machine.
+if(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+  set(CMAKE_SYSTEM_PROCESSOR aarch64 CACHE STRING "" FORCE)
+elseif(VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
+  set(CMAKE_SYSTEM_PROCESSOR x86_64 CACHE STRING "" FORCE)
+endif()
