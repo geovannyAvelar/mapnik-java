@@ -54,6 +54,13 @@ jobs:
 
       - run: ./gradlew build
 
+      # The same check as the release rehearsal, right before uploading: a bad deployment stops the release.
+      - name: Check the signed deployment
+        uses: ./.github/actions/signed-deployment
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
       - name: Publish to Maven Central (Sonatype Central Portal)
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}

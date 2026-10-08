@@ -1,0 +1,56 @@
+name: Release rehearsal
+
+# Everything a release does except the upload: build every natives bundle, test them, build the signed
+# Maven Central deployment and check it (checksums, signatures, POMs, jar contents, size). Run it by hand
+# before pushing a release tag. It never reads the Sonatype credentials, so it cannot publish.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  natives:
+    name: Native libraries
+    uses: ./.github/workflows/natives.yml
+
+  rehearse:
+    name: Signed deployment
+    needs: natives
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - run: chmod +x ./gradlew
+
+      - name: Download the native bundles
+        uses: actions/download-artifact@v7
+        with:
+          pattern: natives-*
+          merge-multiple: true
+          path: build/natives
+
+      - name: The project version
+        run: |
+          echo "Version: $(./gradlew -q printVersion)"
+          echo "The tag for a release of it would be v$(./gradlew -q printVersion)"
+          ls build/natives
+
+      - name: Build and check the signed deployment
+        id: deployment
+        uses: ./.github/actions/signed-deployment
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Keep the deployment for inspection
+        uses: actions/upload-artifact@v6
+        with:
+          name: deployment-rehearsal
+          path: ${{ steps.deployment.outputs.zip }}
+          retention-days: 7

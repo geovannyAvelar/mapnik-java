@@ -1,0 +1,53 @@
+name: Signed deployment
+description: >
+  Builds the Maven Central deployment (the library and every natives artifact found under build/natives),
+  signs it, and checks it with scripts/verify-deployment.py. Nothing is uploaded.
+
+inputs:
+  gpg-private-key:
+    description: The armored private key that signs the artifacts.
+    required: true
+  gpg-passphrase:
+    description: Its passphrase.
+    required: true
+  natives:
+    description: Comma-separated natives artifacts that must be in the deployment. Empty means all six.
+    required: false
+    default: ''
+
+outputs:
+  zip:
+    description: Path of the deployment zip.
+    value: ${{ steps.build.outputs.zip }}
+
+runs:
+  using: composite
+  steps:
+    - name: Build the signed deployment
+      id: build
+      shell: bash
+      env:
+        GPG_PRIVATE_KEY: ${{ inputs.gpg-private-key }}
+        GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
+      run: |
+        ./gradlew nmcpZipAggregation
+        echo "zip=build/nmcp/zip/aggregation.zip" >> "$GITHUB_OUTPUT"
+
+    - name: Verify it
+      shell: bash
+      env:
+        GPG_PRIVATE_KEY: ${{ inputs.gpg-private-key }}
+        GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
+        NATIVES: ${{ inputs.natives }}
+      run: |
+        set -euo pipefail
+        # The public half of the signing key, taken from the private one in a throwaway keyring.
+        export GNUPGHOME="$(mktemp -d)"
+        printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --import 2>&1 | grep -v "^gpg: key .*secret key imported" || true
+        gpg --batch --export > "$RUNNER_TEMP/public.gpg"
+        echo "Signing key:"
+        gpg --batch --list-keys --with-colons | awk -F: '/^pub/ {print "  created " strftime("%Y-%m-%d", $6) ", expires " ($7 == "" ? "never" : strftime("%Y-%m-%d", $7))} /^fpr/ {print "  fingerprint " $10; exit}'
+        VERSION="$(./gradlew -q printVersion)"
+        ARGS=()
+        if [ -n "$NATIVES" ]; then ARGS+=(--natives "$NATIVES"); fi
+        python3 scripts/verify-deployment.py build/nmcp/zip/aggregation.zip "$VERSION" --signed --keyring "$RUNNER_TEMP/public.gpg" "${ARGS[@]}"
