@@ -63,14 +63,19 @@ int mapnik_set_environment(const char* proj_data_dir) {
     return 0;
 }
 
-int mapnik_set_ca_file(const char* path, int overwrite) {
-    // OpenSSL reads SSL_CERT_FILE when a connection is set up, so this applies to every HTTPS tile source made after.
+static int set_env(const char* name, const char* value, bool overwrite) {
 #ifdef _WIN32
-    if (!overwrite && std::getenv("SSL_CERT_FILE") != nullptr) return 0;
-    if (_putenv_s("SSL_CERT_FILE", path) != 0) {
+    if (!overwrite && std::getenv(name) != nullptr) return 0;
+    return _putenv_s(name, value);
 #else
-    if (setenv("SSL_CERT_FILE", path, overwrite ? 1 : 0) != 0) {
+    return setenv(name, value, overwrite ? 1 : 0);
 #endif
+}
+
+int mapnik_set_ca_file(const char* path, int overwrite) {
+    // OpenSSL (Mapnik's tile plugin) reads SSL_CERT_FILE when a connection is set up; PROJ's downloads use libcurl,
+    // which PROJ points at CURL_CA_BUNDLE. Set both so one list of trusted authorities serves them.
+    if (set_env("SSL_CERT_FILE", path, overwrite != 0) != 0 || set_env("CURL_CA_BUNDLE", path, overwrite != 0) != 0) {
         g_error = "could not set the trusted certificates file";
         return -1;
     }

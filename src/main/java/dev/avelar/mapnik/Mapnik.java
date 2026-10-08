@@ -121,7 +121,8 @@ public final class Mapnik {
     /**
      * Trust the certificates in a PEM file for HTTPS tile sources (see {@link Datasource#tilesFromUrl}), instead of the
      * bundled list or the system's. Use it for a server with a private certificate authority. Applies to datasources
-     * created afterwards. The same can be done with the {@code SSL_CERT_FILE} environment variable. The setting is for the
+     * created afterwards. The same can be done with the {@code SSL_CERT_FILE} environment variable. It also sets {@code CURL_CA_BUNDLE}, which
+     * PROJ's downloader reads. The setting is for the
      * whole process, so it also applies to PROJ's downloads (see {@link #enableProjNetwork}) and anything else in the process
      * that reads {@code SSL_CERT_FILE}.
      */
