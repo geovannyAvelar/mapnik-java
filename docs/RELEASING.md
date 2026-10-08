@@ -25,4 +25,4 @@ The same check runs inside the release, right before the upload, so a deployment
 It cannot know what Central itself will say: its own validation (namespace ownership for `dev.avelar`,
 signature key published on a key server, size limits) happens at upload. Before the first release make sure
 the signing key's public half is on `keyserver.ubuntu.com` or `keys.openpgp.org`, and the `dev.avelar`
-namespace is verified in the portal. The current deployment is about 275 MB.
+namespace is verified in the portal. The deployment with all natives is about 275 MB before Windows; check the rehearsal's figure.
