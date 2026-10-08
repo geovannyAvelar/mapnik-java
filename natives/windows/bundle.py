@@ -93,10 +93,12 @@ def add_lib(name, src):
 
 
 add_lib("mapnik_c.dll", shim)
-mapnik_dll = next(iter(glob.glob(os.path.join(prefix, "**", "mapnik.dll"), recursive=True)), None)
+# Mapnik's DLL is called libmapnik.dll on Windows, and that is the name the shim imports.
+mapnik_dll = next(iter(glob.glob(os.path.join(prefix, "**", "libmapnik.dll"), recursive=True)), None) \
+    or next(iter(glob.glob(os.path.join(prefix, "**", "mapnik.dll"), recursive=True)), None)
 if not mapnik_dll:
-    sys.exit("ERROR: mapnik.dll not found under " + prefix)
-add_lib("mapnik.dll", mapnik_dll)
+    sys.exit("ERROR: libmapnik.dll not found under " + prefix)
+add_lib(os.path.basename(mapnik_dll), mapnik_dll)
 
 plugins = []
 # Mapnik installs its plugins under bin/ on Windows, next to the DLLs it builds.
