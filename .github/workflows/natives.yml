@@ -66,6 +66,15 @@ jobs:
           path: build/vcpkg-binary-cache
           key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
 
+      # What vcpkg wrote about a port that failed to build: the job log only has the command that failed.
+      - name: Keep vcpkg's logs if the dependencies failed
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: vcpkg-logs-${{ matrix.platform }}
+          path: build/mapnik-src/vcpkg/buildtrees/*/*.log
+          retention-days: 7
+
       - name: Restore Mapnik
         id: mapnik-cache
         uses: actions/cache/restore@v6
