@@ -72,6 +72,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_link_options(mapnik_c PRIVATE -Wl,--no-undefined)
 endif()
 
-# Drop lib next to where Gradle expects it.
+if(WIN32)
+  # Export the C functions without marking each in the header, and let the headers of Mapnik and
+  # Windows alone: no min and max macros, a UTF-8 source and a correct __cplusplus.
+  set_target_properties(mapnik_c PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  target_compile_definitions(mapnik_c PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _USE_MATH_DEFINES)
+  if(MSVC)
+    target_compile_options(mapnik_c PRIVATE /utf-8 /Zc:__cplusplus /bigobj /permissive-)
+  endif()
+endif()
+
+# Drop lib next to where Gradle expects it. A DLL counts as a runtime output on Windows.
 set_target_properties(mapnik_c PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/native)
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/native
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../build/native)

@@ -82,7 +82,15 @@ final class NativeLoader {
         return api;
     }
 
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
+    }
+
     private static String requirements() {
+        if (isWindows()) {
+            return "The bundle needs 64-bit Windows 10 or later. It carries the Visual C++ runtime it was built with, "
+                + "so nothing else has to be installed; on an older system build the shim against a Mapnik of your own.";
+        }
         if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("mac")) {
             return "The bundle needs the macOS version named in its NOTICE file or a later one; on an older system "
                 + "build the shim against a Mapnik of your own.";
@@ -159,6 +167,8 @@ final class NativeLoader {
     private static void setUpBundle(NativeApi api, Path bundle) {
         // NativeApi.INSTANCE is not assigned yet, so check with the api we were given.
         check(api, api.mapnik_set_environment(bundle.resolve("proj").toString()));
+        // Windows only: the plugins' libraries are in lib/, not next to the plugins
+        check(api, api.mapnik_set_library_directory(bundle.resolve("lib").toString()));
         check(api, api.mapnik_register_datasources(bundle.resolve("plugins").resolve("input").toString()));
         check(api, api.mapnik_register_fonts(bundle.resolve("fonts").toString()));
     }
@@ -213,6 +223,10 @@ final class NativeLoader {
         String xdg = System.getenv("XDG_CACHE_HOME");
         if (xdg != null && !xdg.isEmpty()) {
             return Paths.get(xdg, "mapnik-java");
+        }
+        String localAppData = System.getenv("LOCALAPPDATA");
+        if (isWindows() && localAppData != null && !localAppData.isEmpty()) {
+            return Paths.get(localAppData, "mapnik-java", "cache");
         }
         return Paths.get(System.getProperty("user.home", "."), ".cache", "mapnik-java");
     }

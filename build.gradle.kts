@@ -71,6 +71,7 @@ val nativesTargets = listOf(
     NativesTarget("linux-aarch64", "Linux aarch64"),
     NativesTarget("macos-aarch64", "macOS aarch64 (Apple Silicon)"),
     NativesTarget("macos-x86_64", "macOS x86_64 (Intel)"),
+    NativesTarget("windows-x86_64", "Windows x86_64"),
     NativesTarget("linux-x86_64-postgis", "Linux x86_64, PostGIS plugin", "postgis"),
     NativesTarget("linux-aarch64-postgis", "Linux aarch64, PostGIS plugin", "postgis")
 )
@@ -82,7 +83,8 @@ val useBundledNatives = providers.gradleProperty("bundledNatives").isPresent
 // The platform the integration tests use the bundle of: -PnativesPlatform=, else this machine's.
 val hostPlatform = run {
     val arch = System.getProperty("os.arch")
-    val os = if (System.getProperty("os.name").lowercase().startsWith("mac")) "macos" else "linux"
+    val osName = System.getProperty("os.name").lowercase()
+    val os = if (osName.startsWith("mac")) "macos" else if (osName.startsWith("windows")) "windows" else "linux"
     os + "-" + if (arch == "aarch64" || arch == "arm64") "aarch64" else "x86_64"
 }
 val testedPlatform = providers.gradleProperty("nativesPlatform").orElse(hostPlatform).get()

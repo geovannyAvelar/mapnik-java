@@ -24,7 +24,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 ALL_NATIVES = [
-    "linux-x86_64", "linux-aarch64", "macos-aarch64", "macos-x86_64",
+    "linux-x86_64", "linux-aarch64", "macos-aarch64", "macos-x86_64", "windows-x86_64",
     "linux-x86_64-postgis", "linux-aarch64-postgis",
 ]
 GROUP_PATH = "dev/avelar"
@@ -200,7 +200,7 @@ def check_jar(art, data, version):
             if root + "plugins/input/postgis+pgraster.input" not in names:
                 problem("%s: the add-on has no postgis plugin" % art)
         else:
-            shim = "lib/libmapnik_c." + ("dylib" if platform.startswith("macos") else "so")
+            shim = {"macos": "lib/libmapnik_c.dylib", "windows": "lib/mapnik_c.dll"}.get(platform.split("-")[0], "lib/libmapnik_c.so")
             for need in (shim, "plugins/input/geojson.input", "proj/proj.db", "NOTICE"):
                 if root + need not in names:
                     problem("%s: the jar has no %s" % (art, need))

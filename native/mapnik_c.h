@@ -43,6 +43,9 @@ int         mapnik_version_number(void);
 /* Point PROJ at its data directory (proj.db and friends), for a bundled copy. Call before anything
  * creates a projection. */
 int         mapnik_set_environment(const char* proj_data_dir);
+/* Windows: add a directory to the places DLLs are searched for, so that plugins find their libraries
+ * there. Does nothing elsewhere. Returns 0, or -1 with the error set. */
+int         mapnik_set_library_directory(const char* dir);
 int         mapnik_register_datasources(const char* dir);
 int         mapnik_register_fonts(const char* dir);
 /* Registered input plugin names, newline separated. */
