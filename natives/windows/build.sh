@@ -46,6 +46,8 @@ p = sys.argv[1]
 d = json.load(open(p))
 drop = {"gdal", "libpq", "openssl", "cairomm"}
 d["dependencies"] = [x for x in d["dependencies"] if (x if isinstance(x, str) else x["name"]) not in drop]
+# Mapnik's CMake looks for pkg-config, which the runner does not have: have vcpkg install one.
+d["dependencies"].append("pkgconf")
 json.dump(d, open(p, "w"), indent=2)
 PY
 
@@ -53,6 +55,7 @@ PY
 # its installed tree, so this always runs.
 cmake -S "$SRC" --preset windows-ci \
     -DVCPKG_TARGET_TRIPLET="$TRIPLET" -DVCPKG_HOST_TRIPLET="$TRIPLET" \
+    -DPKG_CONFIG_EXECUTABLE="$(win "$SRC/build/vcpkg_installed/$TRIPLET/tools/pkgconf/pkgconf.exe")" \
     -DADDITIONAL_LIBARIES_PATHS="$(win "$SRC/build/vcpkg_installed/$TRIPLET/bin")" \
     -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=20 -DINSTALL_DEPENDENCIES=OFF \
     -DBUILD_TESTING=OFF -DBUILD_DEMO_VIEWER=OFF -DBUILD_DEMO_CPP=OFF -DBUILD_BENCHMARK=OFF \

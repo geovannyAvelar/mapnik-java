@@ -99,7 +99,9 @@ if not mapnik_dll:
 add_lib("mapnik.dll", mapnik_dll)
 
 plugins = []
-for p in sorted(glob.glob(os.path.join(prefix, "lib", "mapnik", "input", "*.input"))):
+# Mapnik installs its plugins under bin/ on Windows, next to the DLLs it builds.
+for p in sorted(glob.glob(os.path.join(prefix, "bin", "mapnik", "input", "*.input"))
+                + glob.glob(os.path.join(prefix, "lib", "mapnik", "input", "*.input"))):
     dest = os.path.join(out, "plugins", "input", os.path.basename(p))
     shutil.copyfile(p, dest)
     plugins.append(dest)
