@@ -432,7 +432,7 @@ The `Integration` workflow builds the targeted Mapnik version from source (cache
 - **HTTPS tile sources** (`Datasource.tilesFromUrl`) check the server's certificate against a bundled list of
   trusted authorities (Mozilla's), or the file named by `SSL_CERT_FILE`, or one given with
   `Mapnik.setTrustedCertificates`. Upstream Mapnik does not check the certificate at all; the bundled Mapnik has a
-  one-line-per-place patch (in the natives' `licenses/`) that does.
+  small patch (in the natives' `licenses/`) that does.
 - **PROJ datum grids.** The bundle carries PROJ's database but not its large datum-shift grids, so a few
   transformations (for example NAD27 to NAD83) use an approximate shift that can be a metre or so off.
   `Mapnik.enableProjNetwork(true)` lets PROJ download the grids it needs from `cdn.proj.org` once and keep them in
