@@ -269,7 +269,8 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: build/vcpkg-binary-cache
-          key: vcpkg-windows-${{ env.MAPNIK_VERSION }}-${{ hashFiles('natives/windows/build.sh') }}
+          # A new key each run, so a failed run's progress is kept and the next run starts from the latest.
+          key: vcpkg-windows-${{ env.MAPNIK_VERSION }}-${{ github.run_id }}
           restore-keys: |
             vcpkg-windows-${{ env.MAPNIK_VERSION }}-
 
@@ -278,7 +279,7 @@ jobs:
 
       # Saved right away, so a later failure does not throw hours of dependency builds away.
       - name: Save the vcpkg binary cache
-        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: always()
         uses: actions/cache/save@v6
         with:
           path: build/vcpkg-binary-cache
