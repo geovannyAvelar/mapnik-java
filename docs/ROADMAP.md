@@ -140,8 +140,8 @@ check real output, such as pixels and XML.
   bundle, with a MANIFEST of sizes and SHA-256 sums, licences and a NOTICE.
 - Published as `mapnik-java-natives-linux-x86_64` and `-linux-aarch64`, each built and tested on a native runner. `NativeLoader` unpacks it once into a private cache,
   verifies every file and points PROJ at the bundled data.
-- The integration tests run against it in a clean Ubuntu 24.04 container (`scripts/test-natives-linux.sh`).
-- Left out: gdal, ogr, postgis and pgraster plugins. Needs glibc 2.39 or later.
+- Linux is built in the manylinux_2_28 container (glibc 2.28) with the dependencies compiled by vcpkg (`natives/linux/`), and the build refuses a bundle that needs a newer glibc or libstdc++. The integration tests run on AlmaLinux 8, Ubuntu 20.04 and 24.04.
+- Left out of the main bundle: gdal and ogr. PostGIS (with pgraster) is an add-on.
 - macOS is built on Mac runners with Homebrew libraries (`natives/macos/build.sh`, `bundle.py`): install names are rewritten to `@loader_path`, files are signed ad hoc, and a second fresh runner runs the integration tests.
 - Windows is built on a Windows runner with vcpkg dependencies, as in Mapnik's own CI (`natives/windows/build.sh`, `bundle.py`). Mapnik does not set itself up on Windows, so the shim calls `mapnik::setup()` before its first use.
 - Not done: Windows on ARM, a smaller bundle (libproj pulls in curl and gnutls).

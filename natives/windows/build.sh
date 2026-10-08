@@ -16,7 +16,7 @@ case "$PLATFORM" in
 esac
 MAPNIK_VERSION="$(grep '^mapnik.version=' gradle.properties | cut -d= -f2)"
 # The vcpkg commit Mapnik's CI uses for this release (VCPKG_RELEASE in its .github/workflows/build_and_test.yml).
-VCPKG_RELEASE=7e9d43fdadc456cb9ef892bd12d27e32503f41fa
+VCPKG_RELEASE="$(cat natives/vcpkg-release.txt)"
 SRC="$ROOT/build/mapnik-src"
 PREFIX="$ROOT/build/mapnik-prefix"
 win() { cygpath -m "$1"; }     # C:/path form, which CMake and vcpkg accept

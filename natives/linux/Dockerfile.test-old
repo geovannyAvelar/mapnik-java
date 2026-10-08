@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+#
+# Runs the integration tests against the portable Linux bundle on an old distribution that has nothing but a JDK:
+# the proof that the bundle needs no more than glibc 2.28 and an old libstdc++. Needs build/natives from
+# natives/linux/build-manylinux.sh. From the repository root:
+#
+#   docker build -f natives/linux/Dockerfile.test-old --build-arg BASE=almalinux:8 .
+#   docker build -f natives/linux/Dockerfile.test-old --build-arg BASE=ubuntu:20.04 .
+#
+# (Debian 11 is not used: its package archive no longer serves a JDK.) The build fails if a test fails.
+ARG BASE=ubuntu:20.04
+FROM ${BASE}
+ARG PLATFORM=linux-x86_64
+ENV DEBIAN_FRONTEND=noninteractive
+RUN if command -v apt-get >/dev/null; then \
+      apt-get update && apt-get install -y --no-install-recommends ca-certificates openjdk-17-jdk-headless && rm -rf /var/lib/apt/lists/*; \
+    else \
+      dnf install -y java-17-openjdk-devel && dnf clean all; \
+    fi
+RUN ldd --version | head -1 && java -version 2>&1 | head -1
+
+# A clean machine: no Mapnik or PROJ anywhere the dynamic loader would find it.
+RUN if ldconfig -p | grep -E 'libmapnik|libproj\.so|libicuuc'; then echo "this image must not contain Mapnik, PROJ or ICU" >&2; exit 1; fi
+
+COPY . /work
+WORKDIR /work
+RUN test -f build/natives/${PLATFORM}/MANIFEST
+RUN ./gradlew --no-daemon integrationTest -PbundledNatives -PnativesPlatform=${PLATFORM}

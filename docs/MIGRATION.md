@@ -22,7 +22,7 @@ the Mapnik you have installed, and rebuild the shim against it.
 3. Run `./gradlew test integrationTest`. `NativeApiConsistencyTest` fails if the header and the Java
    mapping disagree.
 4. Check the build requirements of the new Mapnik (CMake, Boost, ICU, HarfBuzz, PROJ versions) and
-   update `natives/linux/Dockerfile`, `natives/macos/build.sh` and `.github/workflows/integration.yml`.
+   update `natives/linux/in-container.sh`, `natives/macos/build.sh`, `natives/windows/build.sh` and `.github/workflows/integration.yml`.
 5. Build and test the natives for every platform (`natives.yml`).
 6. Add a line to `CHANGELOG.md` and tag when everything is green.
 

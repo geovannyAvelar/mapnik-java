@@ -95,8 +95,8 @@ final class NativeLoader {
             return "The bundle needs the macOS version named in its NOTICE file or a later one; on an older system "
                 + "build the shim against a Mapnik of your own.";
         }
-        return "The bundle is built on Ubuntu 24.04 and needs glibc 2.39 or later and the C++ runtime of GCC 13 or "
-            + "later; on an older system build the shim against a Mapnik of your own.";
+        return "The bundle needs glibc 2.28 or later and the C++ runtime (libstdc++) of GCC 8 or later, and is not for "
+            + "Alpine (musl); on another system build the shim against a Mapnik of your own.";
     }
 
     // ------------------------------------------------------------------ choosing where to load from
