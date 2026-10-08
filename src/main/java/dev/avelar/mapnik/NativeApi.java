@@ -15,6 +15,8 @@ interface NativeApi extends Library {
     int mapnik_version_number();
     int mapnik_set_environment(String projDataDir);
     int mapnik_set_library_directory(String dir);
+    int mapnik_set_ca_file(String path, int overwrite);
+    int mapnik_set_proj_network(int enable);
     int mapnik_register_datasources(String dir);
     int mapnik_register_fonts(String dir);
     String mapnik_datasource_plugin_names();

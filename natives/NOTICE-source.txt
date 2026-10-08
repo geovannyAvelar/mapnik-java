@@ -7,11 +7,17 @@ text of each is in the licenses/ directory. Several of them, Mapnik itself among
 the GNU Lesser General Public License (LGPL); others are under permissive licenses (MIT, BSD, Apache,
 Boost, zlib and similar). mapnik-java itself is under the MIT license.
 
-Mapnik {{MAPNIK_VERSION}} (LGPL 2.1) is built from the unmodified upstream source:
+Mapnik {{MAPNIK_VERSION}} (LGPL 2.1) is built from the upstream source with one small change, a patch that makes its
+"tiles" input plugin check the certificate of an HTTPS tile server (upstream encrypts the connection but does
+not authenticate the server). The patch is in licenses/ in this archive and in the build recipe named below:
   https://github.com/mapnik/mapnik/releases/tag/v{{MAPNIK_VERSION}}
 
 The other libraries are built from the sources named in the list above, as shipped by the distribution
 or package system named there. No source code of any of them was changed for this bundle.
+
+certs/cacert.pem, where present, is a list of trusted certificate authorities (Mozilla's, under the MPL 2.0, as
+packaged by the system or package named in the list above). HTTPS tile sources are checked against it unless
+SSL_CERT_FILE is set.
 
 You may replace any library in this bundle with a modified or newer build of the same library. Each one
 is a separate file (in lib/, and plugins/input/ for Mapnik's input plugins) that is loaded from the

@@ -13,7 +13,7 @@ PREFIX="$ROOT/build/mapnik-prefix"
 export MACOSX_DEPLOYMENT_TARGET="$(sw_vers -productVersion | cut -d. -f1).0"
 echo "macOS deployment target $MACOSX_DEPLOYMENT_TARGET"
 
-FORMULAE=(cmake ninja pkgconf boost icu4c freetype harfbuzz libxml2 jpeg-turbo libtiff webp cairo libavif proj libpng sqlite zlib)
+FORMULAE=(cmake ninja pkgconf boost icu4c freetype harfbuzz libxml2 jpeg-turbo libtiff webp cairo libavif proj libpng sqlite zlib openssl@3 ca-certificates)
 brew install "${FORMULAE[@]}" || brew upgrade "${FORMULAE[@]}" || true
 
 # Keg-only formulae are not on the default search paths.
@@ -39,6 +39,8 @@ if [[ ! -e "$PREFIX/COPYING" ]]; then
   rm -rf build/mapnik-src
   git clone --branch "v${MAPNIK_VERSION}" --depth 1 --recurse-submodules --shallow-submodules \
     https://github.com/mapnik/mapnik.git build/mapnik-src
+  # The one change made to Mapnik: its tiles plugin must check the certificate of an HTTPS tile server.
+  git -C build/mapnik-src apply "$ROOT"/natives/patches/*.patch
   # Same options as the Linux bundle: no GDAL, OGR or PostGIS plugins, logging on.
   cmake -S build/mapnik-src -B build/mapnik-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$PREFIX" \
@@ -48,7 +50,7 @@ if [[ ! -e "$PREFIX/COPYING" ]]; then
     -DUSE_MEMORY_MAPPED_FILE=ON -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 \
     -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF -DUSE_PLUGIN_INPUT_GDAL_OGR=OFF \
     -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=OFF \
-    -DUSE_PLUGIN_INPUT_TILES_SSL=OFF -DICU_ROOT="$ICU_ROOT"
+    -DUSE_PLUGIN_INPUT_TILES_SSL=ON -DICU_ROOT="$ICU_ROOT"
   cmake --build build/mapnik-build
   cmake --install build/mapnik-build
   cp build/mapnik-src/COPYING "$PREFIX/COPYING"

@@ -118,6 +118,27 @@ public final class Mapnik {
         return NativeApi.INSTANCE.mapnik_datasource_plugin_directories();
     }
 
+    /**
+     * Trust the certificates in a PEM file for HTTPS tile sources (see {@link Datasource#tilesFromUrl}), instead of the
+     * bundled list or the system's. Use it for a server with a private certificate authority. Applies to datasources
+     * created afterwards. The same can be done with the {@code SSL_CERT_FILE} environment variable. The setting is for the
+     * whole process, so it also applies to PROJ's downloads (see {@link #enableProjNetwork}) and anything else in the process
+     * that reads {@code SSL_CERT_FILE}.
+     */
+    public static void setTrustedCertificates(java.nio.file.Path pemFile) {
+        check(NativeApi.INSTANCE.mapnik_set_ca_file(pemFile.toAbsolutePath().toString(), 1));
+    }
+
+    /**
+     * Let PROJ download the datum-shift grids it needs but does not have (for example to convert NAD27 to NAD83
+     * exactly) from its content network, and keep them in its cache. Off by default, because it makes network
+     * requests. Call it before the first projection is used on a thread: PROJ reads the setting when it first
+     * starts on that thread. The same can be done with the {@code PROJ_NETWORK=ON} environment variable.
+     */
+    public static void enableProjNetwork(boolean enable) {
+        check(NativeApi.INSTANCE.mapnik_set_proj_network(enable ? 1 : 0));
+    }
+
     /** Drop cached marker images and memory-mapped files. Call it after changing files Mapnik has already read. */
     public static void clearCaches() {
         NativeApi.INSTANCE.mapnik_clear_caches();

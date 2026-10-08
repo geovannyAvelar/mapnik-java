@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates git ninja-build g++ python3 python3-pip pkg-config patchelf file \
         libboost-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-url-dev libboost-context-dev libboost-json-dev \
         libicu-dev libfreetype-dev libharfbuzz-dev libxml2-dev libjpeg-dev libtiff-dev libwebp-dev \
-        libcairo2-dev libavif-dev libpq-dev libproj-dev libpng-dev libsqlite3-dev zlib1g-dev \
+        libcairo2-dev libavif-dev libpq-dev libssl-dev libproj-dev libpng-dev libsqlite3-dev zlib1g-dev \
         fonts-dejavu-core proj-data \
     && rm -rf /var/lib/apt/lists/*
 # Mapnik 4.3 needs CMake 3.30; Ubuntu 24.04 has 3.28.
@@ -24,6 +24,9 @@ RUN pip install --break-system-packages --no-cache-dir cmake==3.31.6
 RUN git clone --branch "v${MAPNIK_VERSION}" --depth 1 --recurse-submodules --shallow-submodules \
         https://github.com/mapnik/mapnik.git /src/mapnik
 WORKDIR /src/mapnik
+# The one change made to Mapnik: its tiles plugin must check the certificate of an HTTPS tile server.
+COPY natives/patches /src/patches
+RUN git apply /src/patches/*.patch
 # No GDAL or OGR plugins: they pull in a very large dependency tree. PostGIS (with pgraster, they are built together) is shipped as an add-on bundle. Logging is switched on
 # because Mapnik drops every log message otherwise.
 RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/mapnik \
@@ -32,7 +35,7 @@ RUN cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREF
         -DBUILD_UTILITY_PGSQL2SQLITE=OFF -DBUILD_UTILITY_SHAPEINDEX=OFF -DBUILD_UTILITY_SVG2PNG=OFF \
         -DUSE_MEMORY_MAPPED_FILE=ON -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 \
         -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF -DUSE_PLUGIN_INPUT_GDAL_OGR=OFF \
-        -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=ON -DUSE_PLUGIN_INPUT_TILES_SSL=OFF \
+        -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=ON -DUSE_PLUGIN_INPUT_TILES_SSL=ON \
  && cmake --build build \
  && cmake --install build
 

@@ -215,7 +215,8 @@ def check_jar(art, data, version):
                 problem("%s: the add-on has no postgis plugin" % art)
         else:
             shim = {"macos": "lib/libmapnik_c.dylib", "windows": "lib/mapnik_c.dll"}.get(platform.split("-")[0], "lib/libmapnik_c.so")
-            for need in (shim, "plugins/input/geojson.input", "proj/proj.db", "NOTICE"):
+            for need in (shim, "plugins/input/geojson.input", "proj/proj.db", "NOTICE", "certs/cacert.pem",
+                         "licenses/0001-tiles-verify-tls-certificates.patch"):
                 if root + need not in names:
                     problem("%s: the jar has no %s" % (art, need))
             if not any(n.startswith(root + "licenses/") for n in names):

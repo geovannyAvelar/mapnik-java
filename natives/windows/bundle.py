@@ -148,6 +148,22 @@ for name in sorted(os.listdir(proj)):
     if os.path.isfile(src) and (name == "proj.db" or os.path.getsize(src) <= 1_000_000):
         shutil.copyfile(src, os.path.join(out, "proj", name))
 
+# Trusted certificates for HTTPS tile sources (Mozilla's list, from the certifi package), and the change made to
+# Mapnik for them.
+import certifi   # noqa: E402
+os.makedirs(os.path.join(out, "certs"))
+shutil.copyfile(certifi.where(), os.path.join(out, "certs", "cacert.pem"))
+for patch in glob.glob(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "patches", "*.patch")):
+    shutil.copyfile(patch, os.path.join(out, "licenses", os.path.basename(patch)))
+try:
+    from importlib.metadata import distribution
+    d = distribution("certifi")
+    lic = next((f for f in (d.files or []) if f.name == "LICENSE"), None)
+    if lic:
+        shutil.copyfile(str(d.locate_file(lic)), os.path.join(out, "licenses", "certifi.LICENSE"))
+except Exception:
+    pass
+
 # Licences: Mapnik's, DejaVu's, and the copyright file of the vcpkg port behind each bundled DLL.
 shutil.copyfile(os.path.join(prefix, "COPYING"), os.path.join(out, "licenses", "mapnik.COPYING"))
 shutil.copyfile(os.path.join(root, "LICENSE"), os.path.join(out, "licenses", "dejavu-fonts.LICENSE"))
@@ -181,6 +197,8 @@ with open(os.path.join(out, "NOTICE"), "w") as n:
         n.write("  %s %s\n" % (port, version))
         if release:
             n.write("    https://github.com/mapnik/vcpkg/tree/%s/ports/%s\n" % (release, port))
+    n.write("\ncerts/cacert.pem: Mozilla's trusted certificate authorities (MPL 2.0), from the Python package certifi %s,\n" % certifi.__version__)
+    n.write("source https://github.com/certifi/python-certifi\n")
     n.write("\nMicrosoft Visual C++ runtime, redistributed under the Visual Studio licence terms:\n")
     for r in runtime:
         n.write("  %s\n" % r)

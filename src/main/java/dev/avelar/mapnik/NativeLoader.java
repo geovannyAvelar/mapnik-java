@@ -169,6 +169,11 @@ final class NativeLoader {
         check(api, api.mapnik_set_environment(bundle.resolve("proj").toString()));
         // Windows only: the plugins' libraries are in lib/, not next to the plugins
         check(api, api.mapnik_set_library_directory(bundle.resolve("lib").toString()));
+        // HTTPS tile sources check the server's certificate against the bundled list, unless the user set SSL_CERT_FILE
+        Path certs = bundle.resolve("certs").resolve("cacert.pem");
+        if (Files.exists(certs)) {
+            check(api, api.mapnik_set_ca_file(certs.toString(), 0));
+        }
         check(api, api.mapnik_register_datasources(bundle.resolve("plugins").resolve("input").toString()));
         check(api, api.mapnik_register_fonts(bundle.resolve("fonts").toString()));
     }

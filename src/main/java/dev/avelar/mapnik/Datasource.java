@@ -89,7 +89,8 @@ public class Datasource implements AutoCloseable {
 
     /**
      * Vector tiles from an MBTiles file (Mapnik Vector Tile data in a SQLite database). {@code layer}
-     * is the tile layer to draw, such as {@code "places"}; null reads every layer. Use it in a layer whose
+     * is the tile layer to draw, such as {@code "places"}. It is required for vector tiles: with
+     * null, Mapnik reads the file as raster tiles (PNG or JPEG images), which is right only for an MBTiles file of pictures. Use it in a layer whose
      * projection is {@code epsg:3857}: tiles are Web Mercator. Needs Mapnik's {@code tiles} input plugin,
      * which the prebuilt natives include.
      */
@@ -119,9 +120,14 @@ public class Datasource implements AutoCloseable {
     /**
      * Tiles fetched over HTTP: {@code url} is a TileJSON document ({@code .json}) or a template such as
      * {@code http://host/{z}/{x}/{y}.pbf} (or {@code .mvt}; other endings are read as raster tiles). The
-     * prebuilt natives do not include HTTPS, so use {@code http://} or a local proxy. {@code layer} as in {@link #mbtiles}.
+     * connection is encrypted and the server's certificate is checked against the bundled list of trusted authorities (or
+     * the file named by {@code SSL_CERT_FILE}, or set with {@link Mapnik#setTrustedCertificates}); an untrusted server's
+     * tiles are not drawn. {@code layer} as in {@link #mbtiles}: required for vector tiles.
      */
     public static Datasource tilesFromUrl(String url, String layer) {
+        if (layer == null && (url.endsWith(".pbf") || url.endsWith(".mvt"))) {
+            throw new IllegalArgumentException("vector tiles need the name of the tile layer to draw; without one Mapnik reads the tiles as pictures");
+        }
         Map<String, Object> params = new java.util.LinkedHashMap<>();
         params.put("type", "tiles");
         params.put("url", url);

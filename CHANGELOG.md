@@ -17,7 +17,8 @@ First release, for Mapnik 4.3.2.
 - `MapLoadException` with the line, style, layer and element of a style problem, and `MapnikMap.validate` to check a style without keeping it.
 - `RasterGrid`: reads GeoTIFF and Esri ASCII grids in pure Java (strips, tiles, deflate, LZW, PackBits, predictors, 8 to 64-bit samples, extent and EPSG from the tags), tested against files written by GDAL.
 - Optional PostGIS natives add-on for Linux (`mapnik-java-natives-linux-x86_64-postgis`, `-linux-aarch64-postgis`), merged into the main bundle at run time.
-- Vector tiles: `Datasource.mbtiles`, `pmtiles` and `tilesFromUrl`, reading MVT through the `tiles` input plugin.
+- Vector tiles: `Datasource.mbtiles`, `pmtiles` and `tilesFromUrl` (HTTP and HTTPS), reading MVT through the `tiles` input plugin. HTTPS checks the server's certificate: Mapnik is patched to do it, and a list of trusted authorities is bundled (`Mapnik.setTrustedCertificates` to use another).
+- `Mapnik.enableProjNetwork` lets PROJ download datum-shift grids on demand.
 - Typed text placement helpers on `Symbolizer`: label placement, positions with fallback sizes, wrapping, alignment, line labels.
 - `GrayImage`: single-band images (8 to 64-bit integers, 32 and 64-bit floats) coloured with a `RasterColorizer`, no GDAL needed.
 - JMH benchmarks in `benchmarks/`, and guides: cookbook, performance, raster and GDAL, upgrading, GraalVM notes.

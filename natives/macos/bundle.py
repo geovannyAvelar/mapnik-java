@@ -7,6 +7,7 @@ Every library is copied next to the others, its install name and its references 
 rewritten to @loader_path, and it is signed ad hoc again (Apple Silicon refuses to load code whose
 signature no longer matches). Libraries in /usr/lib and /System belong to the system and stay.
 """
+import glob
 import hashlib
 import json
 import os
@@ -162,11 +163,20 @@ for name in sorted(os.listdir(proj_data)):
     if os.path.isfile(src) and (name == "proj.db" or os.path.getsize(src) <= 1_000_000):
         shutil.copyfile(src, os.path.join(out, "proj", name))
 
+# Trusted certificates for HTTPS tile sources (Mozilla's list, from Homebrew's ca-certificates), and the change
+# made to Mapnik for them.
+os.makedirs(os.path.join(out, "certs"))
+ca_prefix = run("brew", "--prefix", "ca-certificates").strip()
+shutil.copyfile(os.path.join(ca_prefix, "share", "ca-certificates", "cacert.pem"), os.path.join(out, "certs", "cacert.pem"))
+ca_real = os.path.realpath(os.path.join(ca_prefix, "share", "ca-certificates", "cacert.pem"))
+for patch in glob.glob(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "patches", "*.patch")):
+    shutil.copyfile(patch, os.path.join(out, "licenses", os.path.basename(patch)))
+
 # Licences: Mapnik's, DejaVu's, and the notices of the Homebrew formula behind each library.
 shutil.copyfile(os.path.join(prefix, "COPYING"), os.path.join(out, "licenses/mapnik.COPYING"))
 shutil.copyfile(os.path.join(dejavu, "LICENSE"), os.path.join(out, "licenses/dejavu-fonts.LICENSE"))
 formulae = {}
-for real in list(by_real) + [os.path.realpath(proj_data)]:
+for real in list(by_real) + [os.path.realpath(proj_data), ca_real]:
     m = re.search(r"/Cellar/([^/]+)/([^/]+)/", real)
     if m:
         formulae[m.group(1)] = (m.group(2), real[:real.index(m.group(0)) + len(m.group(0))])

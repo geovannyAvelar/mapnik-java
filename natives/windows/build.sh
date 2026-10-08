@@ -38,13 +38,17 @@ if [[ ! -d "$SRC/vcpkg/.git" ]]; then
 fi
 [[ -f "$SRC/vcpkg/vcpkg.exe" ]] || cmd.exe //c "$(cygpath -w "$SRC/vcpkg/bootstrap-vcpkg.bat") -disableMetrics"
 
-# Leave out what the bundle does not ship: GDAL, PostgreSQL and OpenSSL (the tiles plugin without SSL), and
-# cairomm, which only Mapnik's demos use. Each is a very large build.
+# The one change made to Mapnik: its tiles plugin must check the certificate of an HTTPS tile server.
+if ! git -C "$SRC" apply --reverse --check "$ROOT"/natives/patches/*.patch 2>/dev/null; then
+  git -C "$SRC" apply "$ROOT"/natives/patches/*.patch
+fi
+
+# Leave out what the bundle does not ship: GDAL and PostgreSQL, and cairomm, which only Mapnik's demos use. Each is a very large build.
 python - "$SRC/vcpkg.json" <<'PY'
 import json, sys
 p = sys.argv[1]
 d = json.load(open(p))
-drop = {"gdal", "libpq", "openssl", "cairomm"}
+drop = {"gdal", "libpq", "cairomm"}
 d["dependencies"] = [x for x in d["dependencies"] if (x if isinstance(x, str) else x["name"]) not in drop]
 # Mapnik's CMake looks for pkg-config, which the runner does not have: have vcpkg install one.
 d["dependencies"].append("pkgconf")
@@ -64,7 +68,7 @@ cmake -S "$SRC" --preset windows-ci \
     -DUSE_MEMORY_MAPPED_FILE=ON -DUSE_LOG=ON -DUSE_LOG_SEVERITY=1 \
     -DUSE_PLUGIN_INPUT_GDAL=OFF -DUSE_PLUGIN_INPUT_OGR=OFF -DUSE_PLUGIN_INPUT_GDAL_OGR=OFF \
     -DUSE_PLUGIN_INPUT_POSTGIS=OFF -DUSE_PLUGIN_INPUT_PGRASTER=OFF -DUSE_PLUGIN_INPUT_POSTGIS_PGRASTER=OFF \
-    -DUSE_PLUGIN_INPUT_TILES_SSL=OFF \
+    -DUSE_PLUGIN_INPUT_TILES_SSL=ON \
     -DCMAKE_INSTALL_PREFIX="$(win "$PREFIX")"
 [[ "${STOP_AFTER:-}" == "deps" ]] && exit 0
 

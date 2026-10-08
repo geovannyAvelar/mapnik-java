@@ -81,7 +81,11 @@ for f in "$OUT"/lib/* "$OUT"/fonts/*.ttf; do
   pkg="$(dpkg -S "$src" 2>/dev/null | head -1 | cut -d: -f1 || true)"
   [[ -n "$pkg" ]] && packages+=("$pkg")
 done
-packages+=(proj-data fonts-dejavu-core)
+packages+=(proj-data fonts-dejavu-core ca-certificates)
+# Trusted certificates for HTTPS tile sources, and the change made to Mapnik for them.
+mkdir -p "$OUT/certs"
+cp /etc/ssl/certs/ca-certificates.crt "$OUT/certs/cacert.pem"
+cp /src/patches/*.patch "$OUT/licenses/"
 for pkg in $(printf '%s\n' "${packages[@]}" | sort -u); do
   [[ -f "/usr/share/doc/$pkg/copyright" ]] && cp "/usr/share/doc/$pkg/copyright" "$OUT/licenses/$pkg.copyright"
 done

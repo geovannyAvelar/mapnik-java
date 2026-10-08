@@ -63,6 +63,33 @@ int mapnik_set_environment(const char* proj_data_dir) {
     return 0;
 }
 
+int mapnik_set_ca_file(const char* path, int overwrite) {
+    // OpenSSL reads SSL_CERT_FILE when a connection is set up, so this applies to every HTTPS tile source made after.
+#ifdef _WIN32
+    if (!overwrite && std::getenv("SSL_CERT_FILE") != nullptr) return 0;
+    if (_putenv_s("SSL_CERT_FILE", path) != 0) {
+#else
+    if (setenv("SSL_CERT_FILE", path, overwrite ? 1 : 0) != 0) {
+#endif
+        g_error = "could not set the trusted certificates file";
+        return -1;
+    }
+    return 0;
+}
+
+int mapnik_set_proj_network(int enable) {
+    // PROJ reads PROJ_NETWORK when a context is created, so this applies to threads that use PROJ afterwards.
+#ifdef _WIN32
+    if (_putenv_s("PROJ_NETWORK", enable ? "ON" : "OFF") != 0) {
+#else
+    if (setenv("PROJ_NETWORK", enable ? "ON" : "OFF", 1) != 0) {
+#endif
+        g_error = "could not set PROJ_NETWORK";
+        return -1;
+    }
+    return 0;
+}
+
 int mapnik_set_library_directory(const char* dir) {
 #ifdef _WIN32
     // Input plugins are DLLs in another directory than the libraries they need. Windows looks for a

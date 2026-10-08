@@ -160,5 +160,5 @@ try (Datasource ds = Datasource.mbtiles(Paths.get("world.mbtiles"), "places");  
 ```
 
 `Datasource.pmtiles` does the same for a PMTiles archive, and `Datasource.tilesFromUrl("http://host/{z}/{x}/{y}.pbf", "layer")`
-reads from a server (HTTP only in the prebuilt natives). The attributes of the tile features are available
+reads from a server, over HTTP or HTTPS. The tiles must come uncompressed (Mapnik does not unzip a tile fetched this way); servers do that unless you ask for gzip. HTTPS checks the server's certificate against the bundled list of trusted authorities, so a server with a private authority needs `Mapnik.setTrustedCertificates(Paths.get("ca.pem"))` first (or the `SSL_CERT_FILE` variable). Vector tiles need the layer name. The attributes of the tile features are available
 to filters and labels. Mapnik cannot write vector tiles.

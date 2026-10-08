@@ -43,6 +43,12 @@ int         mapnik_version_number(void);
 /* Point PROJ at its data directory (proj.db and friends), for a bundled copy. Call before anything
  * creates a projection. */
 int         mapnik_set_environment(const char* proj_data_dir);
+/* Trusted certificates (a PEM file) for HTTPS tile sources: sets SSL_CERT_FILE. With overwrite 0 a value
+ * already set in the environment is kept. Applies to connections made afterwards. */
+int         mapnik_set_ca_file(const char* path, int overwrite);
+/* Let PROJ fetch datum-shift grids it does not have from its network CDN (PROJ_NETWORK). Applies to
+ * threads that use PROJ afterwards. */
+int         mapnik_set_proj_network(int enable);
 /* Windows: add a directory to the places DLLs are searched for, so that plugins find their libraries
  * there. Does nothing elsewhere. Returns 0, or -1 with the error set. */
 int         mapnik_set_library_directory(const char* dir);

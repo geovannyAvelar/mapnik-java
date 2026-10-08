@@ -257,7 +257,7 @@ jobs:
 
       - name: Tools
         run: |
-          pip install pefile
+          pip install pefile certifi
           for attempt in 1 2 3; do choco install --yes --no-progress ninja && ninja --version && break; sleep 10; done
 
       - uses: ilammy/msvc-dev-cmd@v1

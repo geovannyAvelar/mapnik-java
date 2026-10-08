@@ -1,0 +1,56 @@
+diff --git a/plugins/input/tiles/raster_tiles_featureset.hpp b/plugins/input/tiles/raster_tiles_featureset.hpp
+index 66cf5f0..98ddec0 100644
+--- a/plugins/input/tiles/raster_tiles_featureset.hpp
++++ b/plugins/input/tiles/raster_tiles_featureset.hpp
+@@ -54,7 +54,7 @@ class raster_tiles_featureset : public mapnik::Featureset
+     mapnik::context_ptr context_;
+     boost::asio::io_context ioc_;
+ #if defined(MAPNIK_HAS_OPENSSL)
+-    boost::asio::ssl::context ssl_ctx_{boost::asio::ssl::context::tlsv12_client};
++    boost::asio::ssl::context ssl_ctx_{mapnik_tiles_tls_context()};
+ #endif
+     mapnik::box2d<double> extent_;
+     int zoom_;
+diff --git a/plugins/input/tiles/vector_tiles_featureset.hpp b/plugins/input/tiles/vector_tiles_featureset.hpp
+index 2e9eb3c..85727d8 100644
+--- a/plugins/input/tiles/vector_tiles_featureset.hpp
++++ b/plugins/input/tiles/vector_tiles_featureset.hpp
+@@ -58,7 +58,7 @@ class vector_tiles_featureset : public mapnik::Featureset
+     mapnik::context_ptr context_;
+     boost::asio::io_context ioc_;
+ #if defined(MAPNIK_HAS_OPENSSL)
+-    boost::asio::ssl::context ssl_ctx_{boost::asio::ssl::context::tlsv12_client};
++    boost::asio::ssl::context ssl_ctx_{mapnik_tiles_tls_context()};
+ #endif
+     int zoom_;
+     int xmin_;
+diff --git a/plugins/input/tiles/xyz_tiles.hpp b/plugins/input/tiles/xyz_tiles.hpp
+index eab659c..9489214 100644
+--- a/plugins/input/tiles/xyz_tiles.hpp
++++ b/plugins/input/tiles/xyz_tiles.hpp
+@@ -38,6 +38,16 @@
+ 
+ #if defined(MAPNIK_HAS_OPENSSL)
+ #include <boost/asio/ssl.hpp>
++
++// A client context that checks the server's certificate against the trusted certificates of the system, or of
++// the file named by SSL_CERT_FILE. Without this the connection is encrypted but the server is not authenticated.
++inline boost::asio::ssl::context mapnik_tiles_tls_context()
++{
++    boost::asio::ssl::context ctx{boost::asio::ssl::context::tlsv12_client};
++    ctx.set_default_verify_paths();
++    ctx.set_verify_mode(boost::asio::ssl::verify_peer);
++    return ctx;
++}
+ #endif
+ 
+ #include <boost/lockfree/spsc_queue.hpp>
+@@ -176,7 +186,7 @@ inline std::string
+ {
+     ec = {};
+     boost::asio::io_context ioc;
+-    boost::asio::ssl::context ctx{boost::asio::ssl::context::tlsv12_client};
++    boost::asio::ssl::context ctx{mapnik_tiles_tls_context()};
+     std::string result;
+     boost::asio::spawn(
+       ioc,
