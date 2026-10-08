@@ -11,6 +11,7 @@ First release, for Mapnik 4.3.2.
 - Styles, rules and symbolizers built in code or read back from XML, text formats, raster colorizers.
 - Expressions, path expressions, logging control, capabilities.
 - Prebuilt natives for Linux x86_64 and aarch64 (glibc 2.39 or later), macOS Apple Silicon and Intel, and Windows x86_64, self-contained: `mapnik-java-natives-linux-x86_64`, `-linux-aarch64`, `-macos-aarch64`, `-macos-x86_64`, `-windows-x86_64`.
+- Every natives jar's `NOTICE` names the source of each library inside it, how to rebuild the bundle, how to replace a library, and a written offer of the source; the release check fails without it.
 - Leak detection for native handles that are garbage collected without `close()`.
 - `MapPool`, a fixed set of maps shared by many threads, with a builder (warm-up, maximum wait) and `stats()` (borrows, waiting, timeouts, wait times).
 - `MapLoadException` with the line, style, layer and element of a style problem, and `MapnikMap.validate` to check a style without keeping it.

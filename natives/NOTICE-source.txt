@@ -1,0 +1,31 @@
+
+SOURCE CODE, LICENSES AND YOUR RIGHT TO REPLACE THE LIBRARIES
+=============================================================
+
+This archive holds compiled copies of free software libraries, each under its own license. The license
+text of each is in the licenses/ directory. Several of them, Mapnik itself among them, are licensed under
+the GNU Lesser General Public License (LGPL); others are under permissive licenses (MIT, BSD, Apache,
+Boost, zlib and similar). mapnik-java itself is under the MIT license.
+
+Mapnik {{MAPNIK_VERSION}} (LGPL 2.1) is built from the unmodified upstream source:
+  https://github.com/mapnik/mapnik/releases/tag/v{{MAPNIK_VERSION}}
+
+The other libraries are built from the sources named in the list above, as shipped by the distribution
+or package system named there. No source code of any of them was changed for this bundle.
+
+You may replace any library in this bundle with a modified or newer build of the same library. Each one
+is a separate file (in lib/, and plugins/input/ for Mapnik's input plugins) that is loaded from the
+directory the bundle is unpacked to. To use your own copies, put them in a directory laid out the same way
+and point mapnik-java at it with -Dmapnik.native.dir=<directory>/lib (or the environment variable
+MAPNIK_JAVA_NATIVE_DIR). You may also reverse engineer the bundle to debug such modifications.
+
+How this bundle was built: the build recipe is in the mapnik-java repository at the tag {{TAG}}:
+  https://github.com/geovannyAvelar/mapnik-java/tree/{{TAG}}
+It contains the scripts and container definitions, with the exact versions of everything, so the bundle can
+be rebuilt from source.
+
+Written offer: if the source code of any library in this bundle that is licensed under the LGPL (or
+another license that requires it) cannot be obtained from the places named above, the maintainers of
+mapnik-java will provide it on request, for as long as they distribute this bundle and in any case for at
+least three years after its release. Ask by opening an issue at
+  https://github.com/geovannyAvelar/mapnik-java/issues

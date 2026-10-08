@@ -88,7 +88,7 @@ cmake -S native -B build/shim-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
 cmake --build build/shim-cmake
 ls -l build/native
 
-export MAPNIK_VERSION
+export MAPNIK_VERSION VCPKG_RELEASE
 python natives/windows/bundle.py "build/natives/$PLATFORM" "$PLATFORM" "$PREFIX" "$ROOT/build/native/mapnik_c.dll" \
   "$INSTALLED/$TRIPLET" "$ROOT/build/dejavu"
 echo "bundle in build/natives/$PLATFORM (Mapnik $MAPNIK_VERSION)"

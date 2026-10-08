@@ -48,6 +48,7 @@ RUN cmake -S /src/shim/native -B /src/shim/build/cmake -G Ninja -DCMAKE_BUILD_TY
 FROM shim AS bundle
 ARG PLATFORM=linux-x86_64
 COPY natives/linux/bundle.sh natives/linux/bundle-extra.sh /usr/local/bin/
+COPY natives/notice_source.py natives/NOTICE-source.txt gradle.properties /usr/local/share/
 RUN bash /usr/local/bin/bundle.sh "/out/${PLATFORM}" "${PLATFORM}" \
  && bash /usr/local/bin/bundle-extra.sh "/out/${PLATFORM}" "/out/${PLATFORM}-postgis" "${PLATFORM}" "postgis+pgraster.input" postgis
 

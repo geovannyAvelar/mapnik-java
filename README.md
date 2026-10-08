@@ -454,4 +454,12 @@ build.gradle.kts              Gradle build and publishing
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Mapnik itself is licensed separately under the LGPL.
+The mapnik-java code (the `mapnik-java` jar and the C shim in `native/`) is MIT. See [LICENSE](LICENSE).
+
+The `mapnik-java-natives-*` jars are different: they contain compiled copies of Mapnik, which is licensed
+under the LGPL 2.1, and of about seventy libraries it needs, each under its own license (mostly MIT, BSD and
+similar, with some LGPL ones). Each jar carries the license texts in `licenses/` and a `NOTICE` that lists every
+library with the exact source package it was built from, where to get that source, how to rebuild the bundle,
+and how to replace a library with your own build. The libraries are separate files, so the LGPL does not reach
+your own code. If you use a natives jar in a product you distribute, you take on the same obligations for the
+libraries in it: pass on the licenses and the source information (the `NOTICE`). This is not legal advice.

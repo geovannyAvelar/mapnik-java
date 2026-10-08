@@ -196,6 +196,20 @@ def check_jar(art, data, version):
         for rel in listed:
             if root + rel not in names:
                 problem("%s: the MANIFEST lists %s but the jar does not hold it" % (art, rel))
+        # The LGPL libraries inside need their source offered: every bundle's NOTICE must carry that section.
+        notice = root + ("NOTICE.postgis" if platform.endswith("-postgis") else "NOTICE")
+        if notice not in names:
+            problem("%s: the jar has no %s" % (art, notice.replace(root, "")))
+        else:
+            text_ = j.read(notice).decode("utf-8", "replace")
+            mapnik = ".".join(version.split(".")[:3])
+            for need in ("SOURCE CODE, LICENSES AND YOUR RIGHT TO REPLACE THE LIBRARIES", "Written offer",
+                         "https://github.com/mapnik/mapnik/releases/tag/v" + mapnik,
+                         "https://github.com/geovannyAvelar/mapnik-java/tree/v" + version):
+                if need not in text_:
+                    problem("%s: %s lacks \"%s\"" % (art, notice.replace(root, ""), need[:60]))
+            if "{{" in text_:
+                problem("%s: %s has an unfilled placeholder" % (art, notice.replace(root, "")))
         if platform.endswith("-postgis"):
             if root + "plugins/input/postgis+pgraster.input" not in names:
                 problem("%s: the add-on has no postgis plugin" % art)

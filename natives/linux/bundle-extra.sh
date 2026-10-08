@@ -64,11 +64,14 @@ done
   echo "mapnik-java native add-on bundle '$NAME' for $PLATFORM"
   echo "Adds the $PLUGIN input plugin to the main bundle of the same version."
   echo
-  echo "Debian packages the added libraries come from:"
+  echo "Libraries this add-on brings, with the Ubuntu source package and version each was built from"
+  echo "(the source of an exact version is on the Launchpad page given):"
   for pkg in $(printf '%s\n' "${packages[@]:-}" | sort -u); do
     [[ -z "$pkg" ]] && continue
-    dpkg-query -W -f='  ${Package} ${Version}\n' "$pkg" 2>/dev/null || true
+    dpkg-query -W -f='  ${Package} ${Version}\n    source: ${source:Package} ${source:Version}\n    https://launchpad.net/ubuntu/+source/${source:Package}/${source:Version}\n' "$pkg" 2>/dev/null || true
   done
+  echo "  The input plugin itself is part of Mapnik; see the main bundle's NOTICE."
+  python3 /usr/local/share/notice_source.py /usr/local/share/gradle.properties
 } > "$OUT/NOTICE.$NAME"
 
 ( cd "$OUT" && find . -type f ! -name MANIFEST | sed 's|^\./||' | sort | while read -r rel; do

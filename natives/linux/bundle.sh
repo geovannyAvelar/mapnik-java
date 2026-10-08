@@ -87,12 +87,14 @@ for pkg in $(printf '%s\n' "${packages[@]}" | sort -u); do
 done
 {
   echo "mapnik-java native bundle for ${PLATFORM}"
-  echo "Mapnik $(ls "$OUT"/lib/libmapnik.so.* | head -1 | sed 's/.*libmapnik.so.//')"
+  echo "Mapnik $(grep '^mapnik.version=' /usr/local/share/gradle.properties | cut -d= -f2)"
   echo
-  echo "Debian packages the bundled libraries come from:"
+  echo "Libraries in this bundle, with the Ubuntu source package and version each was built from"
+  echo "(the source of an exact version is on the Launchpad page given):"
   for pkg in $(printf '%s\n' "${packages[@]}" | sort -u); do
-    dpkg-query -W -f='  ${Package} ${Version}\n' "$pkg" 2>/dev/null || true
+    dpkg-query -W -f='  ${Package} ${Version}\n    source: ${source:Package} ${source:Version}\n    https://launchpad.net/ubuntu/+source/${source:Package}/${source:Version}\n' "$pkg" 2>/dev/null || true
   done
+  python3 /usr/local/share/notice_source.py /usr/local/share/gradle.properties
 } > "$OUT/NOTICE"
 
 # A listing with sizes and checksums, which the Java loader uses to extract and verify the bundle.

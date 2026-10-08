@@ -8,11 +8,15 @@ rewritten to @loader_path, and it is signed ad hoc again (Apple Silicon refuses 
 signature no longer matches). Libraries in /usr/lib and /System belong to the system and stay.
 """
 import hashlib
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from notice_source import render as render_source_notice   # noqa: E402
 
 out, platform, prefix, shim, dejavu, proj_data = sys.argv[1:7]
 out = os.path.abspath(out)
@@ -186,9 +190,20 @@ with open(os.path.join(out, "NOTICE"), "w") as n:
     n.write("mapnik-java native bundle for %s\n" % platform)
     n.write("Mapnik %s\n" % re.sub(r"^libmapnik\.|\.dylib$", "", mapnik_lib))
     n.write("Needs macOS %s or later.\n\n" % minos)
-    n.write("Homebrew formulae the bundled libraries come from:\n")
+    n.write("Libraries in this bundle, with the Homebrew formula and version each was built from\n")
+    n.write("(the URL is the source archive of that formula):\n")
+    try:
+        info = json.loads(run("brew", "info", "--json=v2", *[f for f in sorted(formulae) if f != "dejavu-fonts"]))
+        sources = {f["name"]: f.get("urls", {}).get("stable", {}).get("url", "") for f in info["formulae"]}
+    except Exception:
+        sources = {}
     for name, (version, _) in sorted(formulae.items()):
         n.write("  %s %s\n" % (name, version))
+        if name == "dejavu-fonts":
+            n.write("    https://github.com/dejavu-fonts/dejavu-fonts/releases/tag/version_2_37\n")
+        elif sources.get(name):
+            n.write("    %s\n" % sources[name])
+    n.write(render_source_notice(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "gradle.properties")))
 
 # A listing with sizes and checksums, which the Java loader uses to extract and verify the bundle.
 rows = []

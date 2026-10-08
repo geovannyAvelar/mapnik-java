@@ -22,6 +22,9 @@ import urllib.request
 
 import pefile
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from notice_source import render as render_source_notice   # noqa: E402
+
 out, platform, prefix, shim, vcpkg_dir, dejavu = sys.argv[1:7]
 out = os.path.abspath(out)
 system32 = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
@@ -171,12 +174,17 @@ with open(os.path.join(out, "NOTICE"), "w") as n:
     n.write("mapnik-java native bundle for %s\n" % platform)
     n.write("Mapnik %s\n" % os.environ.get("MAPNIK_VERSION", "unknown"))
     n.write("Needs 64-bit Windows 10 or later.\n\n")
-    n.write("vcpkg ports the bundled libraries come from:\n")
+    release = os.environ.get("VCPKG_RELEASE", "")
+    n.write("Libraries in this bundle, with the vcpkg port and version each was built from. The portfile of a port\n")
+    n.write("names the upstream source archive and its checksum:\n")
     for port, version in sorted(ports.items()):
         n.write("  %s %s\n" % (port, version))
+        if release:
+            n.write("    https://github.com/mapnik/vcpkg/tree/%s/ports/%s\n" % (release, port))
     n.write("\nMicrosoft Visual C++ runtime, redistributed under the Visual Studio licence terms:\n")
     for r in runtime:
         n.write("  %s\n" % r)
+    n.write(render_source_notice(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "gradle.properties")))
 
 # A listing with sizes and checksums, which the Java loader uses to extract and verify the bundle.
 rows = []
