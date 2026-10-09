@@ -860,6 +860,7 @@ public abstract class Geometry {
         private final byte[] d;
         private int pos;
         private boolean little;
+        private int depth;
 
         WkbReader(byte[] d) {
             this.d = d;
@@ -983,11 +984,15 @@ public abstract class Geometry {
                     return new MultiPolygon(polys);
                 }
                 case 7: {
+                    if (++depth > Json.MAX_DEPTH) {
+                        throw new IllegalArgumentException("geometry collections nested more than " + Json.MAX_DEPTH + " levels deep");
+                    }
                     int n = count();
                     List<Geometry> parts = new ArrayList<>();
                     for (int i = 0; i < n; i++) {
                         parts.add(geometry());
                     }
+                    depth--;
                     return new Collection(parts);
                 }
                 default:
@@ -1019,6 +1024,7 @@ public abstract class Geometry {
     private static final class WktReader {
         private final String s;
         private int pos;
+        private int depth;
 
         WktReader(String s) {
             this.s = s;
@@ -1242,6 +1248,9 @@ public abstract class Geometry {
                     if (emptyKeyword()) {
                         return new Collection(Collections.<Geometry>emptyList());
                     }
+                    if (++depth > Json.MAX_DEPTH) {
+                        throw error("geometry collections nested more than " + Json.MAX_DEPTH + " levels deep");
+                    }
                     expect('(');
                     List<Geometry> parts = new ArrayList<>();
                     do {
@@ -1251,6 +1260,7 @@ public abstract class Geometry {
                         parts.add(geometry());
                     } while (peekIs(','));
                     expect(')');
+                    depth--;
                     return new Collection(parts);
                 }
                 default:

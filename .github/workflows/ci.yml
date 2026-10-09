@@ -9,8 +9,16 @@ on:
 
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-latest
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The pure-Java tests (readers, parsers, builders, the native loader's file handling) run on every system.
+        os: [ubuntu-latest, macos-14, windows-2022]
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v7

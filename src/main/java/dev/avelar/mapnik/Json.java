@@ -11,8 +11,12 @@ import java.util.Map;
  * Throws {@link IllegalArgumentException} with the position of the first problem.
  */
 final class Json {
+    /** How deeply arrays and objects may nest. GeoJSON needs a handful; more is an attack on the stack. */
+    static final int MAX_DEPTH = 256;
+
     private final String s;
     private int pos;
+    private int depth;
 
     private Json(String s) {
         this.s = s;
@@ -137,7 +141,22 @@ final class Json {
         return value;
     }
 
+    private void enter() {
+        if (++depth > MAX_DEPTH) {
+            throw error("nested more than " + MAX_DEPTH + " levels deep");
+        }
+    }
+
     private Map<String, Object> object() {
+        enter();
+        try {
+            return objectBody();
+        } finally {
+            depth--;
+        }
+    }
+
+    private Map<String, Object> objectBody() {
         Map<String, Object> out = new LinkedHashMap<>();
         pos++; // {
         ws();
@@ -172,6 +191,15 @@ final class Json {
     }
 
     private List<Object> array() {
+        enter();
+        try {
+            return arrayBody();
+        } finally {
+            depth--;
+        }
+    }
+
+    private List<Object> arrayBody() {
         List<Object> out = new ArrayList<>();
         pos++; // [
         ws();
