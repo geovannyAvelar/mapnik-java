@@ -152,8 +152,16 @@ check real output, such as pixels and XML.
 - Vector tiles: `Datasource.mbtiles`, `pmtiles` and `tilesFromUrl`, through Mapnik's `tiles` input plugin.
 - Typed text placement helpers on `Symbolizer` (label placement, positions and fallback sizes, wrapping,
   alignment, line labels), checked by Mapnik's strict loader.
+- `mapnik-java-jts`: JTS (and so GeoTools) geometry conversion, as a separate artifact.
+- `Image.toBufferedImage()` / `fromBufferedImage`, and an XYZ tile server example with metatiles and caching.
 
 ## Looked at and left out
+
+- **`module-info.class`.** The minimum Java is 8, which cannot read one; the jars carry `Automatic-Module-Name`
+  (`dev.avelar.mapnik`, `dev.avelar.mapnik.jts`) so the module path works.
+- **Spring Boot and Kotlin helpers.** Nothing in the API needs them: a `MapPool` is a plain bean and Kotlin calls the
+  Java API as it is. A starter would only add a dependency to keep up to date.
+- **GraalVM native image.** Not tested: no GraalVM is part of the build or CI. See docs/GRAALVM.md for what is expected.
 
 - **Collision detector queries.** Mapnik's label collision detector is an internal part of its renderers,
   not something a map exposes; there is nothing meaningful to wrap.
