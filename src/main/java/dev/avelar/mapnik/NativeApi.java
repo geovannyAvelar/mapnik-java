@@ -280,6 +280,8 @@ interface NativeApi extends Library {
     int mapnik_image_set_pixel(Pointer image, int x, int y, int rgba);
     int mapnik_image_fill(Pointer image, String color);
 
+    int mapnik_marker_inspect(String path, int strict, int[] kind, double[] out);
+
     Pointer mapnik_gray_create(int type, int width, int height, double initial);
     void mapnik_gray_free(Pointer gray);
     int mapnik_gray_width(Pointer gray);

@@ -479,6 +479,14 @@ unsigned int mapnik_image_get_pixel(mapnik_image_t* img, int x, int y);
 int          mapnik_image_set_pixel(mapnik_image_t* img, int x, int y, unsigned int rgba);
 int          mapnik_image_fill(mapnik_image_t* img, const char* color);
 
+/* ---- marker files -------------------------------------------------------------------------- */
+
+/* Look at an SVG or image file used as a marker, without drawing or caching it. kind: 1 for SVG, 2 for a raster
+ * image. out gets six numbers: the bounding box of the drawing (minx, miny, maxx, maxy) and the width and height
+ * the file declares. With strict the SVG parser refuses what it would skip. Returns -1 with the error set if the
+ * file is missing or not a marker. */
+int mapnik_marker_inspect(const char* path, int strict, int* kind, double* out);
+
 /* ---- single-band images ------------------------------------------------------------------- */
 
 /* One number per pixel. type is Mapnik's pixel type: 1 gray8, 2 gray8s, 3 gray16, 4 gray16s,

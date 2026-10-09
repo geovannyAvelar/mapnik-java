@@ -142,7 +142,7 @@ check real output, such as pixels and XML.
 - Left out of the main bundle: gdal and ogr. PostGIS (with pgraster) is an add-on.
 - macOS is built on Mac runners with Homebrew libraries (`natives/macos/build.sh`, `bundle.py`): install names are rewritten to `@loader_path`, files are signed ad hoc, and a second fresh runner runs the integration tests.
 - Windows is built on a Windows runner with vcpkg dependencies, as in Mapnik's own CI (`natives/windows/build.sh`, `bundle.py`). Mapnik does not set itself up on Windows, so the shim calls `mapnik::setup()` before its first use.
-- Not done: Windows on ARM, and Alpine (musl). The Linux bundle no longer carries GnuTLS or curl since the dependencies are built by vcpkg.
+- Not done: Windows on ARM, and Alpine (musl). The Linux bundle no longer carries GnuTLS and its dependency tree: libcurl (for PROJ) uses the OpenSSL already bundled.
 
 ## Features added after the first plan
 
