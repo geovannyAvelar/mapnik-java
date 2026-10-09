@@ -592,6 +592,20 @@ public final class MapnikMap implements AutoCloseable {
         }
     }
 
+    /** As {@link #renderToFile(Path, String)}, with a format built by {@link ImageFormat}. */
+    public void renderToFile(Path out, ImageFormat format) {
+        renderToFile(out, format.toString());
+    }
+
+    /** As {@link #renderToBytes(String)}, with a format built by {@link ImageFormat}, such as {@code ImageFormat.png8().colors(64)}. */
+    public byte[] renderToBytes(ImageFormat format) {
+        return renderToBytes(format.toString());
+    }
+
+    public byte[] renderToBytes(ImageFormat format, RenderOptions options) {
+        return renderToBytes(format.toString(), options);
+    }
+
     /** Render to memory. Accepts the same formats as {@link #renderToFile}. */
     public byte[] renderToBytes(String format) {
         return renderToBytes(format, RenderOptions.defaults());

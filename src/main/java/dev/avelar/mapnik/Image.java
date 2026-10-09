@@ -274,6 +274,15 @@ public final class Image implements AutoCloseable {
         }
     }
 
+    /** As {@link #toBytes(String)}, with a format built by {@link ImageFormat}. */
+    public byte[] toBytes(ImageFormat format) {
+        return toBytes(format.toString());
+    }
+
+    public void save(Path file, ImageFormat format) {
+        save(file, format.toString());
+    }
+
     public byte[] toPng() {
         return toBytes("png");
     }
