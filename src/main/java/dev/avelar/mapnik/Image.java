@@ -259,6 +259,37 @@ public final class Image implements AutoCloseable {
     }
 
     /**
+     * A copy as a {@link java.awt.image.BufferedImage} of type {@code TYPE_INT_ARGB}. Needs the {@code java.desktop}
+     * module, which every full JDK has; a class that never calls this does not load it.
+     */
+    public java.awt.image.BufferedImage toBufferedImage() {
+        int w = width();
+        int h = height();
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        out.setRGB(0, 0, w, h, toArgb(), 0, w);
+        return out;
+    }
+
+    /** A new image with the pixels of any {@link java.awt.image.BufferedImage}, converted to straight ARGB. Close it. Sets one pixel at a time, so a very large picture takes a moment. */
+    public static Image fromBufferedImage(java.awt.image.BufferedImage source) {
+        int w = source.getWidth();
+        int h = source.getHeight();
+        int[] argb = source.getRGB(0, 0, w, h, null, 0, w);
+        Image out = create(w, h);
+        try {
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    out.setArgb(x, y, argb[y * w + x]);
+                }
+            }
+            return out;
+        } catch (RuntimeException | Error e) {
+            out.close();
+            throw e;
+        }
+    }
+
+    /**
      * Encode the image. {@code format} is {@code png}, {@code jpeg}, {@code webp} or {@code tiff},
      * optionally with options, such as {@code png8}, {@code png256}, {@code jpeg90}, {@code png:z=9}.
      */

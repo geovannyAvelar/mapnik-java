@@ -24,6 +24,9 @@ First release, for Mapnik 4.3.2.
 - The GeoJSON, WKT and WKB readers refuse absurdly deep nesting instead of overflowing the stack (found by fuzz tests).
 - Typed text placement helpers on `Symbolizer`: label placement, positions with fallback sizes, wrapping, alignment, line labels.
 - Tests for non-ASCII folder names (styles, data, markers, the unpacked natives) and a soak test for native memory growth.
+- `dev.avelar:mapnik-java-jts`: converts geometries to and from JTS (and so GeoTools).
+- `Image.toBufferedImage()` and `Image.fromBufferedImage`.
+- `examples/tile-server`: an XYZ tile server with metatiles, caching and rendering off the HTTP threads.
 - `GrayImage`: single-band images (8 to 64-bit integers, 32 and 64-bit floats) coloured with a `RasterColorizer`, no GDAL needed.
 - JMH benchmarks in `benchmarks/`, and guides: cookbook, performance, raster and GDAL, upgrading, GraalVM notes.
 - `Automatic-Module-Name: dev.avelar.mapnik`. The minimum Java is 8.

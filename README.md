@@ -282,7 +282,27 @@ Symbolizer.raster().colorizer(RasterColorizer.create()
 image.warp("epsg:4326", sourceExtent, "epsg:3857", targetExtent, 512, 512, ScalingMethod.BILINEAR);
 ```
 
+```java
+BufferedImage awt = img.toBufferedImage();           // TYPE_INT_ARGB, a copy
+try (Image fromAwt = Image.fromBufferedImage(awt)) { ... }
+```
+
 `Image` is 8-bit RGBA with straight alpha. The raster colorizer only applies to single-band data, which a datasource such as GDAL supplies to the renderer; Mapnik's `raster` plugin decodes a PNG to RGBA.
+
+### JTS and GeoTools
+
+The optional `dev.avelar:mapnik-java-jts` module converts geometries to and from [JTS](https://github.com/locationtech/jts), which GeoTools, Hibernate Spatial and most Java GIS code use:
+
+```kotlin
+implementation("dev.avelar:mapnik-java-jts:4.3.2.0")
+```
+
+```java
+datasource.add(Jts.fromJts(jtsGeometry), attributes);        // JTS to Mapnik
+org.locationtech.jts.geom.Geometry g = Jts.toJts(feature.geometry());
+```
+
+A GeoTools `SimpleFeature` holds a JTS geometry, so `Jts.fromJts((Geometry) feature.getDefaultGeometry())` is all it takes. Only X and Y are kept.
 
 ### Tiles and UTFGrid
 
@@ -412,7 +432,9 @@ The wrapper covers the core of Mapnik in phases: maps, layers, datasources, feat
 - `examples/render-demo`: a small app that depends on mapnik-java and renders a map to a PNG.
 - `examples/wms-server`: a minimal WMS 1.1.1 and 1.3.0 server (GetCapabilities and GetMap, layer selection, EPSG:4326 and EPSG:3857) built on the wrapper.
 
-Both have their own README.
+- `examples/tile-server`: an XYZ tile server with metatiles, an in-memory and disk cache, and rendering off the HTTP threads, with a Leaflet page.
+
+Each has its own README.
 
 ## Testing
 

@@ -58,7 +58,7 @@ def main():
 
     z = zipfile.ZipFile(args.zip)
     names = set(z.namelist())
-    artifacts = ["mapnik-java"] + ["mapnik-java-natives-" + n for n in args.natives.split(",") if n]
+    artifacts = ["mapnik-java", "mapnik-java-jts"] + ["mapnik-java-natives-" + n for n in args.natives.split(",") if n]
 
     # nothing unexpected: every artifact directory in the zip is one we list
     found_dirs = set()
@@ -186,6 +186,10 @@ def check_jar(art, data, version):
             want = ".".join(version.split(".")[:3])
             if "mapnik.version=%s" % want not in props.replace(" ", ""):
                 problem("%s: mapnik-java.properties does not say Mapnik %s" % (art, want))
+            return
+        if art == "mapnik-java-jts":
+            if "dev/avelar/mapnik/jts/Jts.class" not in names:
+                problem("%s: the jar has no Jts class" % art)
             return
         platform = art[len("mapnik-java-natives-"):]
         root = "dev/avelar/mapnik/natives/%s/" % platform

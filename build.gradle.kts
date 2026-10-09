@@ -395,4 +395,5 @@ nmcpAggregation {
 
 dependencies {
     nmcpAggregation(project(":"))
+    nmcpAggregation(project(":jts"))
 }
