@@ -8,6 +8,9 @@ import java.util.Optional;
  * A coordinate reference system, such as {@code epsg:3857} or a PROJ string. Converts between
  * geographic (longitude, latitude) and projected coordinates. To convert between two projections,
  * use {@link CoordinateTransform}.
+ *
+ * Safe to share between threads: calls on one object take turns. (For speed, give each thread its
+ * own, which takes microseconds to make.)
  */
 public final class Projection implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
@@ -29,25 +32,25 @@ public final class Projection implements AutoCloseable {
     }
 
     /** The string this projection was created from. */
-    public String params() { return N.mapnik_projection_params(ptr()); }
+    public synchronized String params() { return N.mapnik_projection_params(ptr()); }
 
     /** The PROJ definition. */
-    public String definition() { return N.mapnik_projection_definition(ptr()); }
+    public synchronized String definition() { return N.mapnik_projection_definition(ptr()); }
 
     /** A human-readable name, for example {@code WGS 84}. */
-    public String description() { return N.mapnik_projection_description(ptr()); }
+    public synchronized String description() { return N.mapnik_projection_description(ptr()); }
 
     /** True for longitude/latitude systems. */
-    public boolean isGeographic() { return N.mapnik_projection_is_geographic(ptr()) == 1; }
+    public synchronized boolean isGeographic() { return N.mapnik_projection_is_geographic(ptr()) == 1; }
 
     /** The geographic area the projection is meant for, if known, as longitude/latitude degrees. */
-    public Optional<Box2d> areaOfUse() {
+    public synchronized Optional<Box2d> areaOfUse() {
         double[] out = new double[4];
         return N.mapnik_projection_area_of_use(ptr(), out) == 1 ? Optional.of(Box2d.of(out)) : Optional.<Box2d>empty();
     }
 
     /** Geographic (x = longitude, y = latitude) to this projection's coordinates. */
-    public Point2d forward(double lon, double lat) {
+    public synchronized Point2d forward(double lon, double lat) {
         double[] x = {lon};
         double[] y = {lat};
         Mapnik.check(N.mapnik_projection_forward(ptr(), x, y));
@@ -55,7 +58,7 @@ public final class Projection implements AutoCloseable {
     }
 
     /** This projection's coordinates to geographic (x = longitude, y = latitude). */
-    public Point2d inverse(double x, double y) {
+    public synchronized Point2d inverse(double x, double y) {
         double[] px = {x};
         double[] py = {y};
         Mapnik.check(N.mapnik_projection_inverse(ptr(), px, py));
@@ -70,7 +73,7 @@ public final class Projection implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         tracker.closed();
         if (handle != null) {
             N.mapnik_projection_free(handle);

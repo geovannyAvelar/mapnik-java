@@ -2,7 +2,10 @@ package dev.avelar.mapnik;
 
 import com.sun.jna.Pointer;
 
-/** Converts points and boxes from a source projection to a destination projection, and back. */
+/** Converts points and boxes from a source projection to a destination projection, and back. *
+ * Safe to share between threads: calls on one object take turns. (For speed, give each thread its
+ * own, which takes microseconds to make.)
+ */
 public final class CoordinateTransform implements AutoCloseable {
     private static final NativeApi N = NativeApi.INSTANCE;
 
@@ -15,6 +18,21 @@ public final class CoordinateTransform implements AutoCloseable {
 
     /** A transform between two projections. It copies them, so you may close yours afterwards. */
     public static CoordinateTransform between(Projection source, Projection dest) {
+        // Both projections are read while the copy is made, so hold their locks, always in the same order.
+        Object first = source;
+        Object second = dest;
+        if (System.identityHashCode(first) > System.identityHashCode(second)) {
+            first = dest;
+            second = source;
+        }
+        synchronized (first) {
+            synchronized (second) {
+                return betweenLocked(source, dest);
+            }
+        }
+    }
+
+    private static CoordinateTransform betweenLocked(Projection source, Projection dest) {
         Pointer p = N.mapnik_transform_create(source.ptr(), dest.ptr());
         if (p == null) {
             throw new MapnikException(N.mapnik_last_error());
@@ -30,34 +48,34 @@ public final class CoordinateTransform implements AutoCloseable {
     }
 
     /** True if source and destination are the same, so coordinates do not change. */
-    public boolean isIdentity() { return N.mapnik_transform_is_identity(ptr()) == 1; }
+    public synchronized boolean isIdentity() { return N.mapnik_transform_is_identity(ptr()) == 1; }
 
     /** A point from the source projection to the destination projection. */
-    public Point2d forward(double x, double y) {
+    public synchronized Point2d forward(double x, double y) {
         double[] px = {x};
         double[] py = {y};
         Mapnik.check(N.mapnik_transform_forward_point(ptr(), px, py));
         return new Point2d(px[0], py[0]);
     }
 
-    public Point2d forward(Point2d p) {
+    public synchronized Point2d forward(Point2d p) {
         return forward(p.x(), p.y());
     }
 
     /** A point from the destination projection back to the source projection. */
-    public Point2d backward(double x, double y) {
+    public synchronized Point2d backward(double x, double y) {
         double[] px = {x};
         double[] py = {y};
         Mapnik.check(N.mapnik_transform_backward_point(ptr(), px, py));
         return new Point2d(px[0], py[0]);
     }
 
-    public Point2d backward(Point2d p) {
+    public synchronized Point2d backward(Point2d p) {
         return backward(p.x(), p.y());
     }
 
     /** A box from the source to the destination projection: the bounds of its four transformed corners. */
-    public Box2d forward(Box2d box) {
+    public synchronized Box2d forward(Box2d box) {
         return forward(box, 0);
     }
 
@@ -65,18 +83,18 @@ public final class CoordinateTransform implements AutoCloseable {
      * Like {@link #forward(Box2d)}, but also samples {@code pointsPerEdge} points along each edge, so
      * the result covers edges that bulge when projected. Use it for large boxes.
      */
-    public Box2d forward(Box2d box, int pointsPerEdge) {
+    public synchronized Box2d forward(Box2d box, int pointsPerEdge) {
         double[] b = {box.minX(), box.minY(), box.maxX(), box.maxY()};
         Mapnik.check(N.mapnik_transform_forward_box(ptr(), b, pointsPerEdge));
         return Box2d.of(b);
     }
 
     /** A box from the destination back to the source projection. */
-    public Box2d backward(Box2d box) {
+    public synchronized Box2d backward(Box2d box) {
         return backward(box, 0);
     }
 
-    public Box2d backward(Box2d box, int pointsPerEdge) {
+    public synchronized Box2d backward(Box2d box, int pointsPerEdge) {
         double[] b = {box.minX(), box.minY(), box.maxX(), box.maxY()};
         Mapnik.check(N.mapnik_transform_backward_box(ptr(), b, pointsPerEdge));
         return Box2d.of(b);
@@ -90,7 +108,7 @@ public final class CoordinateTransform implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         tracker.closed();
         if (handle != null) {
             N.mapnik_transform_free(handle);
