@@ -32,6 +32,15 @@ final class Fixtures {
         return true;
     }
 
+    /** {@link #dir()} for places that cannot throw a checked exception. */
+    static Path dirUnchecked() {
+        try {
+            return dir();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
     static synchronized Path dir() throws IOException {
         if (dir == null) {
             String plugins = System.getProperty("mapnik.input.plugins");

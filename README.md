@@ -438,6 +438,19 @@ The `Integration` workflow builds the targeted Mapnik version from source (cache
   `Mapnik.enableProjNetwork(true)` lets PROJ download the grids it needs from `cdn.proj.org` once and keep them in
   its cache. It is off by default because it makes network requests.
 
+### Data files: replace them, do not overwrite them
+
+Mapnik memory-maps the data files it reads (shapefiles, GeoJSON, CSV, MBTiles) and keeps the mapping in a cache
+even after a datasource is closed, so that many maps share one copy. **Truncating or overwriting such a file in
+place while it is mapped crashes the whole process** (a SIGBUS on Linux and macOS, a sharing error on Windows). A
+job that regenerates a data file therefore has to write the new version to another file and rename it over the old
+one, which leaves the old mapping valid, and then call `Mapnik.clearCaches()` and create the datasources again:
+
+```java
+Files.move(newFile, dataFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+Mapnik.clearCaches();            // forget the mapping of the old file
+```
+
 ## Documentation
 
 - [API documentation](https://geovannyavelar.github.io/mapnik-java/api/) (Javadoc)

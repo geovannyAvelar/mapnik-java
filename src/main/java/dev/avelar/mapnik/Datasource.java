@@ -55,7 +55,9 @@ public class Datasource implements AutoCloseable {
     }
 
     /**
-     * Create a datasource. {@code params} must contain {@code type}, the plugin name (for example
+     * Create a datasource. Mapnik memory-maps data files and caches the mapping, so do not overwrite a file in place
+     * while a process uses it: write a new file and rename it over the old one, then call {@link Mapnik#clearCaches()}.
+     * {@code params} must contain {@code type}, the plugin name (for example
      * {@code "geojson"} or {@code "shape"}), plus that plugin's options. Values may be String,
      * Integer/Long, Double/Float or Boolean.
      */
