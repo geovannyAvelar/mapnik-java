@@ -36,9 +36,9 @@ check real output, such as pixels and XML.
   optional edge sampling for boxes.
 - `Point2d`. Points that cannot be projected, such as the far side of an orthographic projection,
   raise `MapnikException` instead of returning infinity.
-- Not done: parsing WKT, WKB and GeoJSON into Mapnik geometries. Mapnik's parsers are in static
-  libraries tied to the ICU version Mapnik was built with, so they are not safe to link into the
-  shim. Geometry output (WKT and GeoJSON) is done, in phase 2.
+- Parsing WKT, WKB and GeoJSON: done in Java (`Geometry.fromWkt`, `fromWkb`, `fromGeoJson`), not with Mapnik's own
+  parsers, which are in static libraries tied to the ICU version Mapnik was built with and so are not safe to link
+  into the shim. Geometry output (WKT and GeoJSON) is done, in phase 2.
 
 ## Phase 4: rendering (done)
 
@@ -49,7 +49,7 @@ check real output, such as pixels and XML.
 - `Image`: create, load from a file or bytes, fill, pixels as ARGB, encode, save. Straight alpha.
 - `MapnikMap.renderToImage()` and `render(Image)`, which blends over what is already in the image.
 - `Mapnik.hasCairo()`.
-- Not done: UTFGrid output, which needs a grid renderer and its own encoder. Ask if you need it.
+- UTFGrid output: done later, as `UtfGrid`.
 
 ## Phase 5: styling in code (done)
 
@@ -65,8 +65,8 @@ check real output, such as pixels and XML.
   plain loader would silently ignore all of those. `replaceStyle`, `hasStyle`, `addFontSet`.
 - Why XML and not the C++ symbolizer objects: Mapnik's symbolizer properties are a large templated
   variant model with no string-based setter, and the XML loader is its supported way to set them.
-- Not done: raster colorizer stops, group symbolizers, and text placement options that need nested
-  XML elements. Use an XML style for those.
+- Raster colorizer stops, group symbolizers and text placement options, which need nested XML elements, were done
+  later: `RasterColorizer`, `GroupRule` and `Symbolizer.group()`, and the typed text placement helpers.
 
 ## Phase 6: gaps in the classes already wrapped (done)
 
@@ -90,9 +90,7 @@ check real output, such as pixels and XML.
 ## Phase 9: rasters (done, narrowed)
 
 - `RasterColorizer` with stops and modes, through nested elements in `Symbolizer`. `Image.warp`.
-- Not done: single-band (gray and float) pixel types in `Image`. `Image` stays 8-bit RGBA. A
-  single-band raster still colours correctly when a datasource such as GDAL supplies it to the
-  renderer, which is how the colorizer tests work.
+- Single-band (gray and float) pixel types: done later, as `GrayImage`. `Image` itself stays 8-bit RGBA.
 
 ## Phase 10: geometry and features (done)
 
@@ -144,7 +142,7 @@ check real output, such as pixels and XML.
 - Left out of the main bundle: gdal and ogr. PostGIS (with pgraster) is an add-on.
 - macOS is built on Mac runners with Homebrew libraries (`natives/macos/build.sh`, `bundle.py`): install names are rewritten to `@loader_path`, files are signed ad hoc, and a second fresh runner runs the integration tests.
 - Windows is built on a Windows runner with vcpkg dependencies, as in Mapnik's own CI (`natives/windows/build.sh`, `bundle.py`). Mapnik does not set itself up on Windows, so the shim calls `mapnik::setup()` before its first use.
-- Not done: Windows on ARM, a smaller bundle (libproj pulls in curl and gnutls).
+- Not done: Windows on ARM, and Alpine (musl). The Linux bundle no longer carries GnuTLS or curl since the dependencies are built by vcpkg.
 
 ## Features added after the first plan
 
