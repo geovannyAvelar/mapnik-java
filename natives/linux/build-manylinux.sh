@@ -12,5 +12,5 @@ case "${1:-$(uname -m)}" in
   *) echo "unknown platform: ${1:-}" >&2; exit 2 ;;
 esac
 mkdir -p build
-docker run --rm -v "$PWD":/work -w /work -e STOP_AFTER="${STOP_AFTER:-}" -e MAPNIK_PREFIX_CACHED="${MAPNIK_PREFIX_CACHED:-}" "$IMAGE" \
+docker run --rm -v "$PWD":/work -w /work -e PYTHONDONTWRITEBYTECODE=1 -e STOP_AFTER="${STOP_AFTER:-}" -e MAPNIK_PREFIX_CACHED="${MAPNIK_PREFIX_CACHED:-}" "$IMAGE" \
   bash -c "bash natives/linux/in-container.sh $PLATFORM; rc=\$?; chown -R $(id -u):$(id -g) /work/build 2>/dev/null; exit \$rc"
