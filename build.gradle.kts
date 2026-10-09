@@ -54,7 +54,7 @@ val nativeDir = layout.buildDirectory.dir("native")
 // ============================================================================
 // Prebuilt native libraries
 // ============================================================================
-// natives/linux/Dockerfile builds Mapnik, the shim and everything they need into
+// natives/linux/build-manylinux.sh builds Mapnik, the shim and everything they need into
 // build/natives/<platform>. This packages each directory found there as a jar, which the loader
 // unpacks at run time.
 
