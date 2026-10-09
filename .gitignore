@@ -3,3 +3,5 @@ build/
 *.dylib
 *.dll
 .gradle/
+__pycache__/
+*.pyc
