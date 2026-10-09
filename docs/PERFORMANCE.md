@@ -48,11 +48,34 @@ returns only what touches it usually wins by far.
 
 ## Many threads
 
-Mapnik can render on several maps at once, one map per thread, so throughput should grow with the number
-of maps up to about the number of cores. Share the maps with a `MapPool` sized to your core count.
-`PoolBenchmark` measures tiles per second for a given pool size and thread count
-(`-Pjmh.threads=N`); its numbers vary a lot between runs on a busy machine, so no figure is quoted
-here.
+Mapnik can render on several maps at once, one map per thread, so throughput grows with the number of
+maps up to the number of cores. Share the maps with a `MapPool` sized to your core count.
+
+`PoolBenchmark` draws a 256 by 256 tile of 1000 squares from a pool of N maps with N threads. Measured on an
+Intel Core i5-9300H (4 cores, 8 threads), Linux x86_64, JDK 21, the prebuilt natives, 3 forks of 3 warm-up and
+8 measured iterations each, with the machine otherwise idle:
+
+| Pool size = threads | Tiles per second | Compared with one thread |
+| --- | --- | --- |
+| 1 | 217 ± 21 | 1.0x |
+| 2 | 398 ± 42 | 1.8x |
+| 4 | 805 ± 56 | 3.7x |
+| 8 | 917 ± 32 | 4.2x |
+
+Throughput scales almost linearly up to the number of physical cores. The 4 extra hardware threads of
+hyper-threading add about 14 percent more, so a pool of the number of cores, or a little more, is the right size.
+Beyond that, more maps only cost memory. Reproduce it with:
+
+```bash
+cd benchmarks && ./gradlew jmhJar
+for n in 1 2 4 8; do
+  java -Dmapnik.native.dir=../build/natives/linux-x86_64/lib -jar build/libs/mapnik-java-benchmarks-jmh.jar \
+    PoolBenchmark -t $n -p poolSize=$n -wi 3 -i 8 -w 1s -r 3s -f 3
+done
+```
+
+A laptop that is busy or hot gives much wider error bars (a first run with 5 iterations on one fork varied by
+more than 50 percent), so run it on a quiet machine and look at the error column.
 
 ## Tips
 

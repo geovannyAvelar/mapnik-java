@@ -449,6 +449,27 @@ Text tests need fonts: they use `MAPNIK_FONTS`, or `mapnik-config --fonts`, and 
 
 The `Integration` workflow builds the targeted Mapnik version from source (cached per version), then runs both suites.
 
+### If native code crashes
+
+Mapnik and the libraries under it are C and C++. A bug in one of them, triggered by a damaged file or an
+unlucky input, ends the whole JVM with a signal (SIGSEGV or SIGBUS) and a `hs_err` file; Java cannot catch it.
+The readers for text and image input are fuzzed to keep this from happening (the Java side also limits the
+nesting depth of GeoJSON, WKT and WKB), but the guarantee is "tested", not "impossible". Writing over a data file
+Mapnik has mapped is one known way to crash it (see "Data files" above).
+
+If a crash must not take your service down, render in a separate process and let a supervisor restart it:
+
+- Run the code that uses mapnik-java in its own JVM (a small HTTP or socket service, or a child process per
+  batch), and call it from the main application. The tile server in `examples/tile-server` is shaped for this:
+  it is already a separate service with its own cache.
+- Restart it when it exits, and treat a lost request as an error that can be retried once; if the same input
+  crashes it twice, refuse that input.
+- Keep untrusted files out of the main JVM. Validate a style with `MapnikMap.validate` and probe an image with
+  `Image.probe` in the worker, not in the application.
+
+The library does not ship such a worker: how requests reach it (HTTP, a queue, standard input) and how it is
+restarted depend on how you deploy, and a half-fitting one would be more to maintain than the few lines it saves.
+
 ### Network access
 
 - **HTTPS tile sources** (`Datasource.tilesFromUrl`) check the server's certificate against a bundled list of
