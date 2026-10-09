@@ -2,7 +2,7 @@
 
 Versions follow Mapnik: `<mapnik version>.<wrapper revision>`.
 
-## Unreleased (4.3.2.0)
+## 4.3.2.0 (2026-10-09)
 
 First release, for Mapnik 4.3.2.
 

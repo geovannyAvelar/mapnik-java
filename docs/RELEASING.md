@@ -25,4 +25,4 @@ The same check runs inside the release, right before the upload, so a deployment
 It cannot know what Central itself will say: its own validation (namespace ownership for `dev.avelar`,
 signature key published on a key server, size limits) happens at upload. Before the first release make sure
 the signing key's public half is on `keyserver.ubuntu.com` or `keys.openpgp.org`, and the `dev.avelar`
-namespace is verified in the portal. The deployment with all seven natives artifacts and the library is about 307 MB.
+namespace is verified in the portal. The deployment with all seven natives artifacts, the library and the JTS module is about 307 MB.

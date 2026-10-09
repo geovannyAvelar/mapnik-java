@@ -11,7 +11,7 @@ inputs:
     description: Its passphrase.
     required: true
   natives:
-    description: Comma-separated natives artifacts that must be in the deployment. Empty means all six.
+    description: Comma-separated natives artifacts that must be in the deployment. Empty means all seven.
     required: false
     default: ''
 
