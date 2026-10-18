@@ -161,7 +161,7 @@ check real output, such as pixels and XML.
   (`dev.avelar.mapnik`, `dev.avelar.mapnik.jts`) so the module path works.
 - **Spring Boot and Kotlin helpers.** Nothing in the API needs them: a `MapPool` is a plain bean and Kotlin calls the
   Java API as it is. A starter would only add a dependency to keep up to date.
-- **GraalVM native image.** Not tested: no GraalVM is part of the build or CI. See docs/GRAALVM.md for what is expected.
+- **GraalVM native image.** Tested on Linux x86_64 only; metadata ships in the jar. See docs/GRAALVM.md.
 
 - **Collision detector queries.** Mapnik's label collision detector is an internal part of its renderers,
   not something a map exposes; there is nothing meaningful to wrap.

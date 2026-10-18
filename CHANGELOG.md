@@ -30,3 +30,4 @@ First release, for Mapnik 4.3.2.
 - `GrayImage`: single-band images (8 to 64-bit integers, 32 and 64-bit floats) coloured with a `RasterColorizer`, no GDAL needed.
 - JMH benchmarks in `benchmarks/`, and guides: cookbook, performance, raster and GDAL, upgrading, GraalVM notes.
 - `Automatic-Module-Name: dev.avelar.mapnik`. The minimum Java is 8.
+- GraalVM native image: reachability metadata in the jar, tested with GraalVM 25 on Linux x86_64 (see docs/GRAALVM.md).

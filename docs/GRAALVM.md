@@ -1,7 +1,17 @@
 # GraalVM native image
 
-**Not tested.** This library has not been built into a native image, and nothing in its CI does so. These
-notes say what is likely to be needed, so that you can try it, and what to report if it fails.
+**Tested once, on Linux x86_64.** A small program (memory datasource, a `JavaDatasource` calling back into Java,
+a projection) was built with GraalVM Community 25 (JDK 25.0.2) and JNA 5.19.1 against the Linux x86_64 natives
+bundle, with `-Dmapnik.native.dir` pointing at the bundle's `lib/` and `PROJ_DATA` at its `proj/`. It printed the
+Mapnik version, drew both maps to valid PNGs and ran the callbacks. Without the metadata below it fails at
+start-up (JNA's `libjnidispatch.so` is not found). Not covered: the natives unpacked from the class path
+(`-H:IncludeResources`), macOS, Windows and aarch64, `MapPool`, and anything under load. Nothing in CI builds a
+native image.
+
+The jar carries reachability metadata for the library and for JNA under
+`META-INF/native-image/dev.avelar/mapnik-java/reachability-metadata.json`, generated with the tracing agent as
+described below, so a plain `native-image` build picks it up. If your application uses more of the API
+(other callbacks, other JNA types), run the agent on it and merge what it reports.
 
 mapnik-java loads its C library through [JNA](https://github.com/java-native-access/jna), which finds
 functions by reflection and creates the native interface as a dynamic proxy. A native image needs to be
