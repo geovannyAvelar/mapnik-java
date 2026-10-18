@@ -28,8 +28,16 @@ import org.junit.jupiter.api.Test;
  */
 class SoakIntegrationTest {
     private static final int ITERATIONS = Integer.getInteger("mapnik.soak.iterations", 2500);
-    /** What the process may grow between the end of warm-up and the end, in megabytes. A real leak is far above this. */
-    private static final long ALLOWED_GROWTH_MB = 60;
+    /** What the process may grow between the end of warm-up and the end, in megabytes, whatever the shape. */
+    private static final long ALLOWED_GROWTH_MB = 120;
+    /**
+     * What it may grow in the second half of the run. malloc on macOS and glibc keeps freed memory and fragments, so
+     * the size climbs for a while and then levels off; a leak keeps climbing at the same rate to the end. Judging
+     * the second half alone tells the two apart: a leak of 20 KB a round adds 25 MB there.
+     */
+    private static final long ALLOWED_SECOND_HALF_GROWTH_MB = 25;
+    /** The same for the shared pool, which runs fewer rounds. */
+    private static final long ALLOWED_POOL_GROWTH_MB = 60;
 
     @BeforeAll
     static void setUp() throws Exception {
@@ -118,17 +126,29 @@ class SoakIntegrationTest {
         System.gc();
         long start = residentMegabytes();
         long peak = start;
+        int every = Math.max(1, ITERATIONS / 10);
+        StringBuilder shape = new StringBuilder();
+        long middle = start;
         for (int i = 0; i < ITERATIONS; i++) {
             oneRound(r, text);
-            if (i % 250 == 0) {
-                peak = Math.max(peak, residentMegabytes());
+            if ((i + 1) % every == 0) {
+                long now = residentMegabytes();
+                peak = Math.max(peak, now);
+                shape.append(' ').append(now);
+                if (i + 1 == (ITERATIONS / 2 / every) * every) {
+                    middle = now;
+                }
             }
         }
         System.gc();
         long end = residentMegabytes();
-        System.out.println("SOAK " + ITERATIONS + " rounds: resident " + start + " MB after warm-up, " + end + " MB at the end, peak " + peak + " MB");
+        System.out.println("SOAK " + ITERATIONS + " rounds: resident " + start + " MB after warm-up, " + end
+            + " MB at the end, peak " + peak + " MB; every " + every + " rounds:" + shape);
         assertTrue(end - start <= ALLOWED_GROWTH_MB,
             "resident memory grew from " + start + " MB to " + end + " MB over " + ITERATIONS + " rounds: a native leak?");
+        assertTrue(end - middle <= ALLOWED_SECOND_HALF_GROWTH_MB,
+            "resident memory was still climbing in the second half, " + middle + " MB to " + end + " MB (" + shape
+                + " ): a native leak?");
         assertEquals(0, Mapnik.leakedHandles(), "handles garbage collected without being closed");
     }
 
@@ -147,7 +167,7 @@ class SoakIntegrationTest {
                 System.gc();
                 long end = residentMegabytes();
                 System.out.println("SOAK pool: resident " + start + " MB after warm-up, " + end + " MB at the end");
-                assertTrue(end - start <= ALLOWED_GROWTH_MB, "resident memory grew from " + start + " to " + end + " MB");
+                assertTrue(end - start <= ALLOWED_POOL_GROWTH_MB, "resident memory grew from " + start + " to " + end + " MB");
             } finally {
                 threads.shutdownNow();
             }
