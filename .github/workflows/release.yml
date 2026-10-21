@@ -46,7 +46,7 @@ jobs:
           fi
 
       - name: Download the native bundle
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: natives-*
           merge-multiple: true

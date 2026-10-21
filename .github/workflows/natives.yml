@@ -74,7 +74,7 @@ jobs:
       # What vcpkg wrote about a port that failed to build: the job log only has the command that failed.
       - name: Keep vcpkg's logs if the dependencies failed
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vcpkg-logs-${{ matrix.platform }}
           path: build/mapnik-src/vcpkg/buildtrees/*/*.log
@@ -118,7 +118,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: natives-${{ matrix.platform }}
           path: build/natives
@@ -145,15 +145,15 @@ jobs:
           --health-retries 12
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: natives-linux-x86_64
           path: build/natives
@@ -181,15 +181,15 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: natives-linux-aarch64
           path: build/natives
@@ -246,7 +246,7 @@ jobs:
           ls -la build/natives/${{ matrix.platform }} build/natives/${{ matrix.platform }}/lib | head -80
           cat build/natives/${{ matrix.platform }}/NOTICE
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: natives-${{ matrix.platform }}
           path: build/natives
@@ -279,7 +279,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: natives-${{ matrix.platform }}
           path: build/natives
@@ -363,7 +363,7 @@ jobs:
           ls -la build/natives/${{ env.NATIVES_PLATFORM }} build/natives/${{ env.NATIVES_PLATFORM }}/lib | head -80
           cat build/natives/${{ env.NATIVES_PLATFORM }}/NOTICE
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: natives-${{ env.NATIVES_PLATFORM }}
           path: build/natives
@@ -389,7 +389,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: natives-windows-x86_64
           path: build/natives
